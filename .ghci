@@ -1,0 +1,3 @@
+:set -fno-ghci-sandbox
+:set -ferror-spans
+:set -fdiagnostics-color=always
