@@ -28,8 +28,9 @@ import Options.Applicative
 import Data.Version
 
 import qualified Parser as Atto
+import qualified Parser.SubjectID as Atto
+
 import Data.Subject
-import Data.Subject.Parser
 
 import Cmd
 import Run

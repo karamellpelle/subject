@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module Data.Subject.Parser
+module Parser.SubjectID
   (
 
   ) where
