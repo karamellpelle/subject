@@ -80,8 +80,8 @@ eatInfo cmd = do
 eatGUI :: CmdDataGUI -> RunM ()
 eatGUI cmd = do
     putTextLn $ "Terminal does not handle GUI commands." 
+    putTextLn $ "TODO: print gui arguments anyway" 
     putTextLn $ "Hint: Run application with '--gui FRONTEND CMD' (or without CMD)"
-    putTextLn $ " FYI: Given frontend was '" <> (fromString $ cmdguiFrontend cmd)
 
 eatEmpty :: RunM ()
 eatEmpty = do

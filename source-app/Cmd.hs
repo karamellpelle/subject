@@ -78,7 +78,8 @@ data CmdDataPack =
 -- | GUI settings
 data CmdDataGUI =
     CmdDataGUI {
-        cmdguiFrontend :: Frontend 
+        -- specific GUI settings
+        --cmdguiFullscreen :: Bool
     }
 
 -- | ID settings
@@ -99,7 +100,4 @@ data CmdDataSend =
         cmdsendRecipient :: Recipient
       , cmdsendPath :: FilePath
     }
-    --{
-    --    cmdSendRecipient :: Recipient
-    --}
 

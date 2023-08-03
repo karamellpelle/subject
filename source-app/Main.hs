@@ -116,14 +116,14 @@ parseCmd =
 
 --------------------------------------------------------------------------------
 --  parse commands
---a <- flag def $ "name" <> short 'n'
---a <- flag' $ long "name" <> short 'n'
---a <- switch $ long "name" <> short 'n'
---a <- strOption $ long "name" <> short "n" <> metavar "ARG"
---a <- option auto $long "name" <> short 'n' <> metavar "ARG" -- str, auto, maybeReader, eitherReader
---a <- argument auto $ metavar "ARG" <> value "default value"
---a <- strArgument $ metavar "ARG" <> value "default value"
---a <- attoOption $ long "name" <> short 'n' <> metavar "ARG"
+--a <- flag default $ "name" <> short 'n' <> help "help text"
+--a <- flag' $ long "name" <> short 'n' <> help "help text"
+--a <- switch $ long "name" <> short 'n' <> help "help text"
+--a <- strOption $ long "name" <> short "n" <> metavar "ARG" <> help "help text"
+--a <- option auto $long "name" <> short 'n' <> metavar "ARG" <> help "help text" -- str, auto, maybeReader, eitherReader 
+--a <- argument auto $ metavar "ARG" <> value "default value" <> help "help text"
+--a <- strArgument $ metavar "ARG" <> value "default value" <> help "help text"
+--a <- attoOption $ long "name" <> short 'n' <> metavar "ARG" <> help "help text"
 
 
 -- | "send" command and parse its settings
@@ -131,7 +131,6 @@ parseCmd =
 parseCmdSend :: Mod CommandFields Cmd
 parseCmdSend = 
     command "send" $ info (parser <**> helper) $ progDesc "Send folder or packed subject to server" <> briefDesc
-    -- ^ 
     where
       parser = CmdSend <$> do
           recipient <- option (str) $ long "recipient" <> metavar "RECIPIENT" <> help "Receiver"
@@ -165,7 +164,7 @@ parseCmdID =
     where
       parser = CmdID <$> do
           short <- switch $ long "short" <> help "minimal output"
-          args <- some $ argument str $ metavar "ID"
+          args <- many $ argument str $ metavar "ID(s)"
           
           pure $ CmdDataID {
               cmdidShort = short
@@ -195,9 +194,9 @@ parseCmdGUI =
     command "gui" $ info (parser <**> helper) $ progDesc "Run command in GUI" <> briefDesc 
     where
       parser = CmdGUI <$> do
-          frontend <- option (str) $ long "frontend" <> metavar "FRONTEND" <> value guiDefaultFrontend <> help "Name of frontend"
+          --full <- switch $ long "fullscreen" <> help "Start GUI in fullscreen"
           pure $ CmdDataGUI {
-              cmdguiFrontend = frontend
+              --cmdguiFullscreen = full
           }
 
 -- | "info" command and parse its settings
