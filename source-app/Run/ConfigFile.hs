@@ -15,57 +15,55 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module Run
+module Run.ConfigFile
   (
-    RunData (..),
-    RunM,
-    RunType (..),
+    ConfigFile (..),
   ) where
 
 import MyPrelude
 
-import Data.Version
 import Data.YAML
 
 
-
--- | our Reader monad
-type RunM a = ReaderT RunData IO a
-
-    
 --------------------------------------------------------------------------------
---  global settings
+--  ConfigFile: data that can be defined in a configuration file
 
--- | global data for application
-data RunData = 
-  RunData
+-- | 
+data ConfigFile = 
+  ConfigFile
   {
-      -- meta information
-      runVersion :: Version             -- ^ Version of program
-    , runConfigPath :: FilePath         -- ^ user configuration file path
-    , runConfigVersion :: (UInt, UInt)  -- ^ file format of configuration file
+      -- meta
+      configfileVersion :: (UInt, UInt)
+    , configfilePath :: FilePath
 
-      -- run settings
-    , runVerbose :: Bool          -- ^ be verbose?
-    , runType :: RunType          -- ^ type of UI for program
-
+      -- settings: servers, signers, receivers, etc.
   }
 
 
-instance Default RunData where
-    def = RunData {
-        runVersion    = makeVersion [0,0]
-      , runConfigPath = "" 
-      , runConfigVersion = (0, 0)
-      , runType       = RunTypeTerm
-      , runVerbose    = False
+instance Default ConfigFile where
+    def = ConfigFileData {
+        configfileVersion    = (0, 0)
+      , configfileFilePath   = ""
     }
+
+--------------------------------------------------------------------------------
+--  YAML
+
+--instance FromYAML ConfigFile where
+--
+--instance ToYAML ConfigFile where
+    
 
 
 --------------------------------------------------------------------------------
---  
+--  adding configuration, with right over left
 
--- | how to run application (UI)
-data RunType =
-    RunTypeTerm |
-    RunTypeGUI String
+-- | right overwrites left
+instance SemiGroup ConfigFile where
+    cf0 (<>) cf1 = cf0 {
+          configfileVersion = configFileVersion cf1
+        , configfilePath = ""
+    }
+    where
+      
+

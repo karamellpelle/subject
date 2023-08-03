@@ -15,32 +15,13 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module Run.GUI
+module Data.Recipient
   (
-    gui,
+    Recipient,
     
-    guiDefaultFrontend,
   ) where
 
 import MyPrelude
 
-import Run
-import Cmd
-
-
-gui :: Frontend -> Cmd -> RunM ()
-gui frontend cmd = do
-
-    case frontend of
-        "GTK3"     -> putTextLn "Running GUI with GTK3 as frontend"
-        "monomer"  -> putTextLn "Running GUI with monomer as frontend"
-        _          -> putTextLn $ toText $ "'" ++ frontend ++ "' is not a supported frontend"
-
-    pure ()
-    --win <- new Gtk.Window [ #title := "Hi there" ]
-
-guiDefaultFrontend :: Frontend
-guiDefaultFrontend = "monomer"
-
-
-
+-- FIXME
+type Recipient = String

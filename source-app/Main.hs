@@ -57,11 +57,10 @@ main = do
 
     -- run program in environment
     usingReaderT run $ do
-         
-        --case run .^ rundataRunType of
-        case RunTypeTerm of
-            RunTypeTerm -> term cmd
-            RunTypeGUI  -> gui cmd
+
+        case runType run of
+            RunTypeTerm      -> term cmd
+            RunTypeGUI front -> gui front cmd
 
         pure ()
 
@@ -71,6 +70,7 @@ main = do
 
 getRunData :: IO RunData
 getRunData = do
+    
     pure $ def 
 -- TODO: use Relude::guarded
 
@@ -82,86 +82,131 @@ getOptionsAndCmd :: RunData -> IO (RunData, Cmd)
 getOptionsAndCmd run =
 
     customExecParser preferences $ info (parser <**> helper) $ mconcat [ fullDesc 
-        , progDesc $ "Handling subjects in different ways"
         , header   $ "* * * subject * * *"
-        , footer   $ "Copyright karamellpelle@hotmail.com (c) 2023" ++ showVersion Paths_subject.version ++ " (" ++ $(gitBranch) ++ "@" ++ $(gitHash) ++ ")"
+        , progDesc $ "Naming, packing and sending image folders as subjects"
+        , footer   $ "Copyright karamellpelle@hotmail.com (c) 2023. Version " ++ showVersion Paths_subject.version ++ "\n" ++ 
+                     "Git: " ++ $(gitBranch) ++ " @ " ++ $(gitHash)
         --, failureCode 1
       ]
     where
       preferences = prefs $ showHelpOnEmpty -- <> showHelpOnError
       -- parse general settings and/or subcommand
       parser = do
-          -- options for RunData
-          --a <- flag def $ "name" <> short 'n'
-          --a <- flag' $ long "name" <> short 'n'
-          --a <- switch $ long "name" <> short 'n'
 
-          -- commands and their options
-          cmd <- parseCmd 
-          
-          pure (run, cmd)
+          -- GUI? choose frontend to run command
+          runtype <- (option (fmap RunTypeGUI str) $ long "gui" <> metavar "FRONTEND" <> help "Run application in GUI mode using given frontend") <|> pure RunTypeTerm
 
+          -- parse options for RunData
+          --
 
---------------------------------------------------------------------------------
---  parse commands
+          -- parse commands and their options
+          -- TODO: use lenses and update multiple fields of 'run'
+          cmd <- parseCmd-- <|> pure CmdEmpty
+
+          --pure (run, cmd)
+          pure (run { runType = runtype }, cmd) 
 
 
 -- | find a subcommand and parse that command's settings
 parseCmd :: Parser Cmd
 parseCmd = 
-    subparser $ parseCmdConfig <> parseCmdID <> parseCmdPack <> parseCmdSend <> parseCmdGUI
+    subparser $ parseCmdConfig <> parseCmdID <> parseCmdPack <> parseCmdSend <> parseCmdInfo <> parseCmdGUI 
+
+
+--------------------------------------------------------------------------------
+--  parse commands
+--a <- flag def $ "name" <> short 'n'
+--a <- flag' $ long "name" <> short 'n'
+--a <- switch $ long "name" <> short 'n'
+--a <- strOption $ long "name" <> short "n" <> metavar "ARG"
+--a <- option auto $long "name" <> short 'n' <> metavar "ARG" -- str, auto, maybeReader, eitherReader
+--a <- argument auto $ metavar "ARG" <> value "default value"
+--a <- strArgument $ metavar "ARG" <> value "default value"
+--a <- attoOption $ long "name" <> short 'n' <> metavar "ARG"
+
 
 -- | "send" command and parse its settings
+--   send a folder or packed subject to server. TODO: shall we ignore prepacked folder to prevent sending non-encrypted subjects?
 parseCmdSend :: Mod CommandFields Cmd
 parseCmdSend = 
-    command "send" $ info (parser <**> helper) $ progDesc "Send subject to server" <> briefDesc
+    command "send" $ info (parser <**> helper) $ progDesc "Send folder or packed subject to server" <> briefDesc
+    -- ^ 
     where
       parser = CmdSend <$> do
-          --a <- flag def $ "name" <> short 'n'
-          --a <- flag' $ long "name" <> short 'n'
-          --a <- switch $ long "name" <> short 'n'
-          --a <- strOption $ long "name" <> short "n" <> metavar "ARG"
-          --a <- option auto $long "name" <> short 'n' <> metavar "ARG"
-          --a <- argument auto $ metavar "ARG" <> value "default value"
-          --a <- strArgument $ metavar "ARG" <> value "default value"
-          --a <- attoOption $ long "name" <> short 'n' <> metavar "ARG"
-          pure $ CmdDataSend
+          recipient <- option (str) $ long "recipient" <> metavar "RECIPIENT" <> help "Receiver"
+          arg <- argument str $ metavar "FOLDER|PACKED_FILE" <> help "Packed file or folder"
+          pure $ CmdDataSend {
+              cmdsendPath = arg
+            , cmdsendRecipient = recipient
+          }
 
 
 -- | "config" command and parse its settings
+--   config write or get 
 parseCmdConfig :: Mod CommandFields Cmd 
 parseCmdConfig = 
-    command "config" $ info (parser <**> helper) $ progDesc "Send subject to server" <> briefDesc 
+    command "config" $ info (parser <**> helper) $ progDesc "Configure user settings" <> briefDesc 
     where
       parser = CmdConfig <$> do
-          --a <- switch $ long "set" <> short 's'
-          --b <- switch $ long "get" <> short 'g'
-          c <- strOption $ long "test" <> short 'n' <> metavar "TEST-NAME"
-          pure $ CmdDataConfig
+          -- TODO: implement set
+          getset <- (fmap Just $ Get <$> (option str $ long "get" <> short 'g' <> metavar "VARIABLE" <> help "Get variable")) <|> 
+                    (fmap Just $ Set <$> (option str $ long "set" <> short 's' <> metavar "VARIABLE" <> help "Set variable") <*> (option str $ long "value" <> short 'v' <> metavar "VALUE" <> help "Value to set"))
+          pure $ CmdDataConfig {
+              cmdconfigGetSet = getset
+                      
+          }
 
 -- | "id" command and parse its settings
+--   FIXME: Use SubjectID instead of String
 parseCmdID :: Mod CommandFields Cmd 
 parseCmdID = 
-    command "id" $ info (parser <**> helper) $ progDesc "convert SubjectID (number <-> magic sentence)" <> briefDesc
+    command "id" $ info (parser <**> helper) $ progDesc "Convert SubjectID (number <-> magic sentence)" <> briefDesc
     where
       parser = CmdID <$> do
-          pure $ CmdDataID
+          short <- switch $ long "short" <> help "minimal output"
+          args <- some $ argument str $ metavar "ID"
+          
+          pure $ CmdDataID {
+              cmdidShort = short
+            , cmdidArgs = args
+          }
 
 -- | "pack" command and parse its settings
 parseCmdPack :: Mod CommandFields Cmd 
 parseCmdPack = 
-    command "pack" $ info (parser <**> helper) $ progDesc "pack subject" <> briefDesc
+    command "pack" $ info (parser <**> helper) $ progDesc "Pack subject directory" <> briefDesc
     where
       parser = CmdPack <$> do
-          pure $ CmdDataPack
+          -- FIXME: SubjectID instead of string
+          recipient <- option (str) $ long "recipient" <> metavar "RECIPIENT" <> help "Receiver"
+          sid <- option (str) $ long "subject-id" <> metavar "SUBJECT-ID" <> help "Naming folder (SubjectID)"
+          arg <- argument str $ metavar "FOLDER" <> help "Folder to pack"
+
+          pure $ CmdDataPack {
+              cmdpackRecipient = recipient
+            , cmdpackPath = arg
+            , cmdpackSubjectID = sid
+          }
 
 -- | "gui" command parse its settings
 parseCmdGUI :: Mod CommandFields Cmd 
 parseCmdGUI = 
-    command "gui" $ info (parser <**> helper) $ progDesc "run as GUI" <> briefDesc
+    command "gui" $ info (parser <**> helper) $ progDesc "Run command in GUI" <> briefDesc 
     where
       parser = CmdGUI <$> do
-          pure $ CmdDataGUI
+          frontend <- option (str) $ long "frontend" <> metavar "FRONTEND" <> value guiDefaultFrontend <> help "Name of frontend"
+          pure $ CmdDataGUI {
+              cmdguiFrontend = frontend
+          }
+
+-- | "info" command and parse its settings
+parseCmdInfo :: Mod CommandFields Cmd 
+parseCmdInfo = 
+    command "info" $ info (parser <**> helper) $ progDesc "Show specific info" <> briefDesc
+    where
+      parser = CmdInfo <$> do
+          -- TODO: more settings
+          pure $ CmdDataInfo
 
 
 

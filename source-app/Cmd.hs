@@ -20,44 +20,85 @@ module Cmd
     Cmd (..),
 
     CmdDataConfig (..),
-    CmdDataSend (..),
-    CmdDataPack (..), 
-    CmdDataGUI  (..), 
     CmdDataID   (..), 
+    CmdDataInfo   (..), 
+    CmdDataPack (..), 
+    CmdDataSend (..),
+    CmdDataGUI  (..), 
+
+    Frontend,
+    GetSet (..),
 
   ) where
 
 import MyPrelude
+import Data.Recipient
+
+--------------------------------------------------------------------------------
+--  types
+
+type Frontend = String
+
 
 --------------------------------------------------------------------------------
 -- which command to perform
 --
 
 data Cmd =
+    CmdEmpty                 | -- ^ no command
     CmdConfig !CmdDataConfig | -- ^ write configuration
-    CmdSend   !CmdDataSend   | -- ^ send subject to server
+    CmdID     !CmdDataID     | -- ^ convert SubjectID
+    CmdInfo   !CmdDataInfo   | -- ^ show info 
     CmdPack   !CmdDataPack   | -- ^ pack data
-    CmdGUI    !CmdDataGUI    | -- ^ run in GUI mode
-    CmdID     !CmdDataID       -- ^ run in GUI mode
+    CmdSend   !CmdDataSend   | -- ^ send subject to server
+    CmdGUI    !CmdDataGUI      -- ^ run in GUI mode
 
 
 --------------------------------------------------------------------------------
 --  command specific settings
 
+data GetSet =
+    Get Text | Set Text Text
+
+-- | config settings
 data CmdDataConfig =
-    CmdDataConfig
+    CmdDataConfig {
+        cmdconfigGetSet :: Maybe GetSet
+    }
 
+-- | pack settings
 data CmdDataPack =
-    CmdDataPack
+    CmdDataPack {
+        cmdpackRecipient :: Recipient
+        --cmdpackID :: SubjectID
+      , cmdpackSubjectID :: String
+      , cmdpackPath :: FilePath
+    }
 
+-- | GUI settings
 data CmdDataGUI =
-    CmdDataGUI
+    CmdDataGUI {
+        cmdguiFrontend :: Frontend 
+    }
 
+-- | ID settings
+--   FIXME: Use SubjectID instead of String
 data CmdDataID =
-    CmdDataID
+    CmdDataID {
+        cmdidShort :: Bool
+      , cmdidArgs :: [String]
+    }
 
+-- | info settings
+data CmdDataInfo =
+    CmdDataInfo
+
+-- | send settings
 data CmdDataSend =
-    CmdDataSend
+    CmdDataSend {
+        cmdsendRecipient :: Recipient
+      , cmdsendPath :: FilePath
+    }
     --{
     --    cmdSendRecipient :: Recipient
     --}

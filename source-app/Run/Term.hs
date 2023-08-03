@@ -27,13 +27,62 @@ import Cmd
 
 term :: Cmd -> RunM ()
 term cmd = do
+    putTextLn ""
     putTextLn " * * Running Command in Terminal * * "
     putTextLn ""
     putText   "=> "
     case cmd of 
-        CmdConfig d -> putTextLn "Command is configuring"
-        CmdSend d   -> putTextLn "Command is sending"
-        CmdPack d   -> putTextLn "Command is packing"
-        CmdGUI d    -> putTextLn "Command is GUI"
-        CmdID d     -> putTextLn "Command is identification"
-        _           -> putTextLn "Command is not recognized :("
+        CmdConfig  d  -> eatConfig d
+        CmdID      d  -> eatID d
+        CmdPack    d  -> eatPack d
+        CmdSend    d  -> eatSend d
+        CmdInfo    d  -> eatInfo d
+        CmdGUI     d  -> eatGUI d
+        CmdEmpty    -> eatEmpty
+        _           -> putTextLn "Terminal does not know how to handle given command"
+
+
+--------------------------------------------------------------------------------
+--  data handlers
+
+-- config
+eatConfig :: CmdDataConfig -> RunM ()
+eatConfig cmd = do
+    putTextLn "User config:"
+    case cmdconfigGetSet cmd of
+        Just (Get var)        -> putTextLn $ " => " <> var <> ": (unknown)"
+        Just (Set var value)  -> putTextLn $ " => " <> var <> " set to " <> value
+        Nothing               -> putTextLn $ "(no action)"
+        
+
+-- id
+eatID :: CmdDataID -> RunM ()
+eatID cmd = do
+    putTextLn $ "Converting ID (id <-> magic sentence) from "
+    forM_ (cmdidArgs cmd) $ putTextLn . fromString  
+
+-- pack
+eatPack :: CmdDataPack -> RunM ()
+eatPack cmd = do
+    putTextLn $ "Packing folder '" <> fromString (cmdpackPath cmd) <> "' to '" <> fromString (cmdpackRecipient cmd) <> "' with SubjectID=" <> fromString (cmdpackSubjectID cmd) 
+
+-- send
+eatSend :: CmdDataSend -> RunM ()
+eatSend cmd = do
+    putTextLn $ "sending folder '" <> fromString (cmdsendPath cmd) <> "' to '" <> fromString (cmdsendRecipient cmd) <> "'"
+
+-- info
+eatInfo :: CmdDataInfo -> RunM ()
+eatInfo cmd = do
+    putTextLn "List info (not implemented)"
+
+-- gui
+eatGUI :: CmdDataGUI -> RunM ()
+eatGUI cmd = do
+    putTextLn $ "Terminal does not handle GUI commands." 
+    putTextLn $ "Hint: Run application with '--gui FRONTEND CMD' (or without CMD)"
+    putTextLn $ " FYI: Given frontend was '" <> (fromString $ cmdguiFrontend cmd)
+
+eatEmpty :: RunM ()
+eatEmpty = do
+    putTextLn "Nothing to do - nice :)"
