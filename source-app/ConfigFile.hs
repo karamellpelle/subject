@@ -15,9 +15,11 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module Run.ConfigFile
+module ConfigFile
   (
     ConfigFile (..),
+
+    readConfigFile,
   ) where
 
 import MyPrelude
@@ -26,9 +28,9 @@ import Data.YAML
 
 
 --------------------------------------------------------------------------------
---  ConfigFile: data that can be defined in a configuration file
+--  ConfigFile: 
 
--- | 
+-- | data that can be defined in a configuration file
 data ConfigFile = 
   ConfigFile
   {
@@ -39,31 +41,30 @@ data ConfigFile =
       -- settings: servers, signers, receivers, etc.
   }
 
-
+-- Default
 instance Default ConfigFile where
-    def = ConfigFileData {
+    def = ConfigFile {
         configfileVersion    = (0, 0)
-      , configfileFilePath   = ""
+      , configfilePath   = ""
     }
 
+-- | right adds to (or overwrite) left
+instance Semigroup ConfigFile where
+    (<>) config0 config1 = config0 {
+          configfileVersion = configfileVersion config1
+        , configfilePath = configfilePath config1
+    }
+      
+
 --------------------------------------------------------------------------------
---  YAML
+--  read from file
 
 --instance FromYAML ConfigFile where
 --
 --instance ToYAML ConfigFile where
     
-
-
---------------------------------------------------------------------------------
---  adding configuration, with right over left
-
--- | right overwrites left
-instance SemiGroup ConfigFile where
-    cf0 (<>) cf1 = cf0 {
-          configfileVersion = configFileVersion cf1
-        , configfilePath = ""
-    }
-    where
-      
+readConfigFile :: MonadIO m => FilePath -> m ConfigFile
+readConfigFile path = io $ do
+    putTextLn $ "=> reading ConfigFile: " <> fromString path
+    return def
 

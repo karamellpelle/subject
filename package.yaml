@@ -8,6 +8,9 @@ copyright:           karamellpelle@hotmail.com
 extra-source-files:
 - README.md
 - CHANGELOG.md
+data-dir:            data-dir
+data-files:
+- subject/**/*
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -21,11 +24,9 @@ description:         Please see the README on Github at <https://github.com/kara
 dependencies:
 - base
 - relude
-- gitrev
 - attoparsec
 - HsYAML
 - data-default
-- optparse-applicative
 #- libssh2
 #- hashable
 #- random
@@ -62,7 +63,10 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - subject
-    - optparse-simple
+    - optparse-applicative
+    - directory
+    - filepath
+    - gitrev
 
 tests:
   subject-test:

@@ -15,17 +15,27 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
+{-# LANGUAGE TemplateHaskell #-}
 module Run
   (
     RunData (..),
     RunM,
     RunType (..),
+
+    getRunData,
   ) where
 
 import MyPrelude
 
 import Data.Version
 import Data.YAML
+import System.Directory
+import System.FilePath
+
+import Development.GitRev
+import Paths_subject
+
+import ConfigFile
 
 
 
@@ -42,6 +52,7 @@ data RunData =
   {
       -- meta information
       runVersion :: Version             -- ^ Version of program
+    , runVersionInfo :: String          -- ^ tags, like Git commit
     , runConfigPath :: FilePath         -- ^ user configuration file path
     , runConfigVersion :: (UInt, UInt)  -- ^ file format of configuration file
 
@@ -55,17 +66,59 @@ data RunData =
 instance Default RunData where
     def = RunData {
         runVersion    = makeVersion [0,0]
+      , runVersionInfo = $(gitBranch) ++ " @ " ++ $(gitHash)
       , runConfigPath = "" 
       , runConfigVersion = (0, 0)
-      , runType       = RunTypeTerm
+
       , runVerbose    = False
+      , runType       = RunTypeTerm
     }
 
 
 --------------------------------------------------------------------------------
 --  
 
--- | how to run application (UI)
+-- | how to run application (UI) aka frontend
+--   FIXME: rename into RunFrontend?
 data RunType =
     RunTypeTerm |
     RunTypeGUI String
+
+
+--------------------------------------------------------------------------------
+--  Paths_
+
+-- version :: Version
+-- 
+-- getBinDir :: IO FilePath
+-- getLibDir :: IO FilePath
+-- getDynLibDir :: IO FilePath
+-- getDataDir :: IO FilePath
+-- getLibexecDir :: IO FilePath
+-- getSysconfDir :: IO FilePath
+
+--------------------------------------------------------------------------------
+--  create data for program execution
+
+-- | create initial 'RunData' for program execution
+--    0. from default value
+--    1. from system config (file)
+--    2. from user config (file)
+--    3. from environment variables
+getRunData :: IO RunData
+getRunData = (flip execStateT) def $ do
+
+    globalCfg <- readConfigFile =<< (io $ getGlobalFileName "config.yaml")
+    localCfg  <- readConfigFile =<< (io $ getLocalFileName "config.yaml")
+
+    return ()    
+  where
+    getGlobalFileName :: FilePath -> IO FilePath
+    getGlobalFileName path = getDataFileName ("subject" </> path)
+
+    getLocalFileName :: FilePath -> IO FilePath
+    getLocalFileName path = do
+        dir <- getXdgDirectory XdgConfig "subject" 
+        return $ dir </> path
+
+-- TODO: use Relude::guarded

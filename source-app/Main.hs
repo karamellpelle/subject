@@ -15,12 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ApplicativeDo #-}
 module Main (main) where
-
-import Development.GitRev
-import qualified Paths_subject
 
 import MyPrelude
 
@@ -66,27 +62,27 @@ main = do
         pure ()
 
 
---------------------------------------------------------------------------------
---  create data for program execution
-
-getRunData :: IO RunData
-getRunData = do
-    
-    pure $ def 
--- TODO: use Relude::guarded
 
 
 --------------------------------------------------------------------------------
 -- parse command line
--- * https://cabal.readthedocs.io/en/latest/cabal-package.html#accessing-data-files-from-package-code
+--
+
+-- | modify RunData and get Command
+-- TODO: use cabal >= 3.10 and access package fields (https://cabal.readthedocs.io/en/latest/cabal-package.html#accessing-package-related-informations)
+--    * name :: String
+--    * version :: Version
+--    * synopsis :: String
+--    * copyright :: String
+--    * homepage :: String
 getOptionsAndCmd :: RunData -> IO (RunData, Cmd)
 getOptionsAndCmd run =
 
     customExecParser preferences $ info (parser <**> helper) $ mconcat [ fullDesc 
         , header   $ "* * * subject * * *"
         , progDesc $ "Naming, packing and sending image folders as subjects"
-        , footer   $ "Copyright karamellpelle@hotmail.com (c) 2023. Version " ++ showVersion Paths_subject.version ++ "\n" ++ 
-                     "Git: " ++ $(gitBranch) ++ " @ " ++ $(gitHash)
+        , footer   $ "Copyright karamellpelle@hotmail.com (c) 2023. Version " ++ showVersion (runVersion run) ++ 
+                     "\nGit: " ++ runVersionInfo run
         --, failureCode 1
       ]
     where
@@ -94,7 +90,7 @@ getOptionsAndCmd run =
       -- parse general settings and/or subcommand
       parser = do
 
-          -- GUI? choose frontend to run command
+          -- GUI? choose frontend to run 
           runtype <- (option (fmap RunTypeGUI str) $ long "gui" <> metavar "FRONTEND" <> help "Run application in GUI mode using given frontend") <|> pure RunTypeTerm
 
           -- parse options for RunData
