@@ -29,13 +29,14 @@ import MyPrelude
 
 import Data.Version
 import Data.YAML
+import qualified Data.Text as T
 import System.Directory
 import System.FilePath
 
 import Development.GitRev
 import Paths_subject
 
-import ConfigFile
+import Parser as Atto
 
 
 
@@ -87,38 +88,158 @@ data RunType =
 
 --------------------------------------------------------------------------------
 --  Paths_
+--  * https://cabal.readthedocs.io/en/3.10/cabal-package.html#accessing-data-files-from-package-code
 
--- version :: Version
--- 
--- getBinDir :: IO FilePath
--- getLibDir :: IO FilePath
--- getDynLibDir :: IO FilePath
--- getDataDir :: IO FilePath
--- getLibexecDir :: IO FilePath
--- getSysconfDir :: IO FilePath
+
 
 --------------------------------------------------------------------------------
 --  create data for program execution
+
+type StateR = StateT RunData IO
+
+type ErrorString = Text
+
+type ExceptStateR = ExceptT ErrorString StateR
+
 
 -- | create initial 'RunData' for program execution
 --    0. from default value
 --    1. from system config (file)
 --    2. from user config (file)
 --    3. from environment variables
-getRunData :: IO RunData
-getRunData = (flip execStateT) def $ do
+getRunData :: IO (Either ErrorString RunData)
+getRunData = evaluatingStateT def $ 
+    runExceptT $ do
 
-    globalCfg <- readConfigFile =<< (io $ getGlobalFileName "config.yaml")
-    localCfg  <- readConfigFile =<< (io $ getLocalFileName "config.yaml")
+        applyConfigFile =<< getGlobalFileName "config.yaml"
+        applyConfigFile =<< getLocalFileName "config.yaml"
 
-    return ()    
+        -- TODO: environment variables
+
+        -- TODO: other settings
+
+        -- return RunData (or error)
+        get
+
   where
-    getGlobalFileName :: FilePath -> IO FilePath
-    getGlobalFileName path = getDataFileName ("subject" </> path)
+    getGlobalFileName path = io $ getDataFileName ("subject" </> path)
 
-    getLocalFileName :: FilePath -> IO FilePath
     getLocalFileName path = do
-        dir <- getXdgDirectory XdgConfig "subject" 
+        dir <- io $ getXdgDirectory XdgConfig "subject" 
         return $ dir </> path
 
--- TODO: use Relude::guarded
+
+-- | read config file and apply on 'RunData'.
+--   will terminate program if necessary data couldn't be read
+applyConfigFile :: FilePath -> ExceptStateR ()
+applyConfigFile path = do
+    return ()
+    --required yaml "version" $ \v -> modify $ over 
+    --optional yaml "receiver > fingerprint" $ (modify $ over (receiverL . fingerprintL))
+
+
+
+
+--------------------------------------------------------------------------------
+--  retrieve values in YAML based on a field path
+
+
+-- | retrieve a required value from configuration file
+getRequired :: FromYAML a => Text -> (a -> StateR b) -> ExceptStateR b
+getRequired yaml fpath =
+    undefined
+
+-- | retrieve an optional value from configuration file
+getOptional :: FromYAML a => Text -> (a -> StateR b) -> ExceptStateR b
+getOptional = undefined
+
+fieldPath :: Text -> Either ErrorString [Text]
+fieldPath v =
+    first toText $ parseOnly parseRecordFieldGet v
+
+
+
+--------------------------------------------------------------------------------
+--  parse record fields
+
+-- parse record field path 
+parseRecordFieldGet :: Atto.Parser [Text]
+parseRecordFieldGet =
+    parseRecordFields ">" <* skipSpace <* endOfInput <?> "valid record recordfield path (get)"
+
+-- parse record recordfield path with set value 
+parseRecordFieldSet :: Atto.Parser a -> Atto.Parser ([Text], a)
+parseRecordFieldSet parser =
+    liftA2 (,) (parseRecordFields ">" <* skipSpace <* string assigner) (skipSpace *> parser) <* skipSpace <* endOfInput <?> "valid record recordfield path (set)"
+    where
+      assigner = "="
+
+-- parse a path of record recordfield names 
+parseRecordFields :: Text -> Atto.Parser [Text]
+parseRecordFields separator =
+    sepBy1 (skipSpace *> parseRecordField) (skipSpace *> string separator) 
+    where
+      separator = ">" 
+      parseRecordField = liftA2 T.cons (satisfy p0) (Atto.takeWhile p1) <?> "valid record recordfield name" -- FIXME: prevent GHCi from including takeWhile!
+      p0 = \c -> c == '_' || isAsciiLower c -- _ or a-z
+      p1 = \c -> c == '_' || isAsciiLower c || isAsciiUpper c || isDigit c || c == '\'' -- _ or a-z or A-Z or 0-9 or '
+
+
+
+{-
+--------------------------------------------------------------------------------
+--  LensFrom
+
+data LensFrom a =
+    LensFrom (forall b. Lens a b)
+
+mapLensFromRunData = mkMap [
+      ("version", runVersionL)
+    , ("xx", runXxL)
+  ]
+
+
+--findLens :: forall b . [Text] -> Either ErroString (Lens a b)
+findLens :: [Text] -> Either ErroString (Lens a b)
+findLens (mword, mwords) =
+    case map[mword] of
+        Nothing   -> Left $ "'" <> mword <> "' is not a valid keyword of" <> showType a
+        Just lens -> Right lens <*> findLens mwords  -- todo apply lens
+findLens [] =
+    []
+
+-- | retrieve a required value from configuration file
+required :: Monad m, FromYAML b => Text -> (a -> Lens a b -> b -> StateT a m ()) -> ExceptStateR b -- or StateR b? or a?
+required yaml path handleLensAB =
+    mwords <- parsePath pathSeparator path
+    lens <- findLens
+    --b <- hoistEither (modify $ \a -> over a lens))
+    hoistEither $ modify $ \a -> over a lens) $ \b ->
+        case findYAML yaml mwords of
+            Left err  -> Left $ "no such config record: '" <> path <> "'" <> err
+            Right b'  -> handleLensAB a 
+
+    hoistEither $ modify $ \a -> handle \lens a -> \a -> over a lens) $ \b ->
+        handleLensAB a b lens
+
+getRunData = do
+    required yaml "recipient > fingerprint " $ \lens b -> do
+        modify $ over lens $ f b
+        --modify $ over lens $ f b append
+
+        return a
+
+parsePath :: Text -> Text -> Either ErrorString [Text]
+parsePath sep path =
+    case runParser parser of 
+        Left err  -> Left $ ""
+        right     -> right
+    where
+      parser
+
+separatorPath :: Text
+separatorPath = ">"
+--hoist either
+-- TODO: use Relude::guarded: Constr <$> guarded valueOK value
+
+-}

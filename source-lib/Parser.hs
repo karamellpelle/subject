@@ -18,24 +18,32 @@
 module Parser
   (
     module Data.Attoparsec.Text,
+    module Data.Char,
+
+    parseTest',
+
     AttoParse (..)
   ) where
 
 import MyPrelude
 
 import Data.Attoparsec.Text
+import Data.Char
 
 
 class AttoParse a where
     parser :: Parser a
 
---import qualified Data.Attoparsec.Text as A
---attoReadM :: A.Parser a -> ReadM a
---attoReadM p = eitherReader (A.parseOnly p . T.pack)
---
---atto :: AttoParse a => ReadM a
---atto = eitherReader (parseOnly parser . T.pack)
---
---attoOption :: AttoParse a => Option a
+-- | like 'parseTest' but feed end of input
+parseTest' :: Show a => Parser a -> Text -> IO ()
+parseTest' p str =
+    case feed (parse p str) "" of
+        Done i r  -> putTextLn $ show r <> "    , rest of input: " <> show i
+        Partial f -> print "parseTest': partial result - strange"
+        fail      -> print fail
+
+    
+--instance Read a => AttoParse a where
+--    parser = readEither <$> takeWhile ()
 
 

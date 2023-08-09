@@ -45,21 +45,27 @@ main = do
     --    1. from system config (file)
     --    2. from user config (file)
     --    3. from environment variables
-    run <- getRunData 
-    -- ^ TODO: exception handling 
+    getRunData >>= \maybeR -> case maybeR of
+        Left err  -> do
+            putTextLn $ "Error while initializing: " <> err
+            putTextLn "Exiting"
+            exitFailure
+            -- ^ TODO: output application name
 
-    -- finialize 'RunData' and retrieve command(s) to perform
-    --    4. from command line
-    (run, cmd) <- getOptionsAndCmd run
+        Right run -> do
 
-    -- run program in environment
-    usingReaderT run $ do
+            -- finialize 'RunData' and retrieve command(s) to perform
+            --    4. from command line
+            (run, cmd) <- getOptionsAndCmd run
 
-        case runType run of
-            RunTypeTerm      -> term cmd
-            RunTypeGUI front -> gui front cmd
+            -- run application in the RunData environment
+            usingReaderT run $ do
 
-        pure ()
+                case runType run of
+                    RunTypeTerm      -> term cmd
+                    RunTypeGUI front -> gui front cmd
+
+                pure ()
 
 
 
@@ -90,17 +96,15 @@ getOptionsAndCmd run =
       -- parse general settings and/or subcommand
       parser = do
 
-          -- GUI? choose frontend to run 
+          -- options for RunData:
+          --  - GUI with frontend?
+
           runtype <- (option (fmap RunTypeGUI str) $ long "gui" <> metavar "FRONTEND" <> help "Run application in GUI mode using given frontend") <|> pure RunTypeTerm
 
-          -- parse options for RunData
-          --
 
           -- parse commands and their options
-          -- TODO: use lenses and update multiple fields of 'run'
           cmd <- parseCmd-- <|> pure CmdEmpty
 
-          --pure (run, cmd)
           pure (run { runType = runtype }, cmd) 
 
 
@@ -122,7 +126,7 @@ parseCmd =
 --a <- attoOption $ long "name" <> short 'n' <> metavar "ARG" <> help "help text"
 
 
--- | "send" command and parse its settings
+-- | command "send" and its options.
 --   send a folder or packed subject to server. TODO: shall we ignore prepacked folder to prevent sending non-encrypted subjects?
 parseCmdSend :: Mod CommandFields Cmd
 parseCmdSend = 
@@ -137,7 +141,7 @@ parseCmdSend =
           }
 
 
--- | "config" command and parse its settings
+-- | command "config" and its options.
 --   config write or get 
 parseCmdConfig :: Mod CommandFields Cmd 
 parseCmdConfig = 
@@ -152,7 +156,7 @@ parseCmdConfig =
                       
           }
 
--- | "id" command and parse its settings
+-- | command "id" and its options
 --   FIXME: Use SubjectID instead of String
 parseCmdID :: Mod CommandFields Cmd 
 parseCmdID = 
@@ -167,7 +171,8 @@ parseCmdID =
             , cmdidArgs = args
           }
 
--- | "pack" command and parse its settings
+-- | command "pack" and its options
+--   TODO: metadata: notes, type, tags, etc.
 parseCmdPack :: Mod CommandFields Cmd 
 parseCmdPack = 
     command "pack" $ info (parser <**> helper) $ progDesc "Pack subject directory" <> briefDesc
@@ -184,7 +189,7 @@ parseCmdPack =
             , cmdpackSubjectID = sid
           }
 
--- | "gui" command parse its settings
+-- | command "gui" and its options
 parseCmdGUI :: Mod CommandFields Cmd 
 parseCmdGUI = 
     command "gui" $ info (parser <**> helper) $ progDesc "Run command in GUI" <> briefDesc 
@@ -195,7 +200,7 @@ parseCmdGUI =
               --cmdguiFullscreen = full
           }
 
--- | "info" command and parse its settings
+-- | command "info" and its options
 parseCmdInfo :: Mod CommandFields Cmd 
 parseCmdInfo = 
     command "info" $ info (parser <**> helper) $ progDesc "Show specific info" <> briefDesc
@@ -204,6 +209,15 @@ parseCmdInfo =
           -- TODO: more settings
           pure $ CmdDataInfo
 
+
+--import qualified Data.Attoparsec.Text as A
+--attoReadM :: A.Parser a -> ReadM a
+--attoReadM p = eitherReader (A.parseOnly p . T.pack)
+--
+--atto :: AttoParse a => ReadM a
+--atto = eitherReader (parseOnly parser . T.pack)
+--
+--attoOption :: AttoParse a => Option a
 
 
 
