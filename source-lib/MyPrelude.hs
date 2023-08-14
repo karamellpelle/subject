@@ -25,6 +25,7 @@ module MyPrelude
     fI,
     succ',
     io,
+    quote,
 ) where
 
 import Relude
@@ -53,3 +54,7 @@ fI = fromIntegral
 -- | we don't want 'succ' from Prelude since it do bounds checking
 succ' :: Num a => a -> a
 succ' = \a -> a + 1
+
+quote :: (IsString s, Semigroup s) => s -> s
+quote str =
+    "'" <> str <> "'"

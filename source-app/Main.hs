@@ -21,12 +21,10 @@ module Main (main) where
 import MyPrelude
 
 import Options.Applicative
-import Data.Version
 
 import qualified Parser as Atto
 import qualified Parser.SubjectID as Atto
 
-import Data.Subject
 
 import Cmd
 import Run
@@ -47,10 +45,9 @@ main = do
     --    3. from environment variables
     getRunData >>= \maybeR -> case maybeR of
         Left err  -> do
-            putTextLn $ "Error while initializing: " <> err
+            putTextLn $ "Error while initializing application: " <> err
             putTextLn "Exiting"
             exitFailure
-            -- ^ TODO: output application name
 
         Right run -> do
 
@@ -74,25 +71,22 @@ main = do
 -- parse command line
 --
 
+--------------------------------------------------------------------------------
+
 -- | modify RunData and get Command
--- TODO: use cabal >= 3.10 and access package fields (https://cabal.readthedocs.io/en/latest/cabal-package.html#accessing-package-related-informations)
---    * name :: String
---    * version :: Version
---    * synopsis :: String
---    * copyright :: String
---    * homepage :: String
 getOptionsAndCmd :: RunData -> IO (RunData, Cmd)
 getOptionsAndCmd run =
 
     customExecParser preferences $ info (parser <**> helper) $ mconcat [ fullDesc 
-        , header   $ "* * * subject * * *"
-        , progDesc $ "Naming, packing and sending image folders as subjects"
-        , footer   $ "Copyright karamellpelle@hotmail.com (c) 2023. Version " ++ showVersion (runVersion run) ++ 
-                     "\nGit: " ++ runVersionInfo run
+        , header   $ prettyHeader $ runMetaName run
+        , progDesc $ runMetaSynopsis run
+        , footer   $ runMetaCopyright run ++ showVersion (runMetaVersion run) ++ runMetaVersionInfo run
         --, failureCode 1
       ]
     where
-      preferences = prefs $ showHelpOnEmpty -- <> showHelpOnError
+      prettyHeader head = "* * * " <> head <> " * * *"
+      preferences = prefs $ showHelpOnEmpty 
+
       -- parse general settings and/or subcommand
       parser = do
 

@@ -30,9 +30,25 @@ import MyPrelude
 import Data.Attoparsec.Text
 import Data.Char
 
+--------------------------------------------------------------------------------
+--  parse text
+
+type ErrorString = Text
+
+eitherParse :: Parser a -> Text -> Either ErrorString a
+eitherParse parser str =
+    --first toText $ feed "" $ parseOnly parseConfigPathGet s
+    first toText $ parseOnly parser str
+
+
+--------------------------------------------------------------------------------
+--  class AttoParse
 
 class AttoParse a where
     parser :: Parser a
+
+--------------------------------------------------------------------------------
+--  test parsers
 
 -- | like 'parseTest' but feed end of input
 parseTest' :: Show a => Parser a -> Text -> IO ()
@@ -41,9 +57,5 @@ parseTest' p str =
         Done i r  -> putTextLn $ show r <> "    , rest of input: " <> show i
         Partial f -> print "parseTest': partial result - strange"
         fail      -> print fail
-
-    
---instance Read a => AttoParse a where
---    parser = readEither <$> takeWhile ()
 
 

@@ -33,6 +33,7 @@ module Cmd
 
 import MyPrelude
 import Data.Recipient
+import Data.Subject
 
 --------------------------------------------------------------------------------
 --  types
@@ -51,7 +52,7 @@ data Cmd =
     CmdInfo   !CmdDataInfo   | -- ^ show info 
     CmdPack   !CmdDataPack   | -- ^ pack data
     CmdSend   !CmdDataSend   | -- ^ send subject to server
-    CmdGUI    !CmdDataGUI      -- ^ run in GUI mode
+    CmdGUI    !CmdDataGUI      -- ^ run in GUI mode . TODO: CmdGUI !CmdDataGUI !Cmd -- use subcommand? run like so: 'subject --verbose gui --frontend gtk --fullscreen id --short 43 332 434 444  
 
 
 --------------------------------------------------------------------------------

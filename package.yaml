@@ -41,10 +41,12 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -Wprepositive-qualified-module
 
 default-extensions:
  - NoImplicitPrelude
  - OverloadedStrings
+ - ImportQualifiedPost
 
 library:
   source-dirs: source-lib
