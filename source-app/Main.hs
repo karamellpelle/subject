@@ -62,7 +62,7 @@ main = do
                     RunTypeTerm      -> term cmd
                     RunTypeGUI front -> gui front cmd
 
-                pure ()
+    exitSuccess
 
 
 
