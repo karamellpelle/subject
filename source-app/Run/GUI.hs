@@ -34,7 +34,7 @@ gui frontend cmd = do
     case frontend of
         "GTK3"     -> putTextLn "Running GUI with GTK3 as frontend"
         "monomer"  -> putTextLn "Running GUI with monomer as frontend"
-        _          -> putTextLn $ toText $ "'" ++ frontend ++ "' is not a supported frontend"
+        _          -> putTextLn $ quote (toText frontend) <> " is not a supported frontend"
 
     pure ()
     --win <- new Gtk.Window [ #title := "Hi there" ]

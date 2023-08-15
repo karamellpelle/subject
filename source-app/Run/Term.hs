@@ -69,7 +69,7 @@ eatPack cmd = do
 -- send
 eatSend :: CmdDataSend -> RunM ()
 eatSend cmd = do
-    putTextLn $ "sending folder '" <> fromString (cmdsendPath cmd) <> "' to '" <> fromString (cmdsendRecipient cmd) <> "'"
+    putTextLn $ "sending folder " <> quote (toText $ cmdsendPath cmd) <> " to " <> quote (toText $ cmdsendRecipient cmd)
 
 -- info
 eatInfo :: CmdDataInfo -> RunM ()
