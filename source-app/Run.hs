@@ -42,7 +42,7 @@ import RecordField
 import Parser.RecordField
 
 import Relude.Extra.Lens
-
+import qualified Data.Map.Strict as Map
 
 
 -- | our Reader monad
@@ -131,7 +131,7 @@ data RunData =
 instance Default RunData where
     def                         = RunData {
         runMetaName             = ""
-        runMetaVersion          = makeVersion [0,0]
+      , runMetaVersion          = makeVersion [0,0]
       , runMetaVersionInfo      = ""
       , runMetaSynopsis         = ""
       , runMetaCopyright        = ""
@@ -259,32 +259,44 @@ applyConfigFile path = do
 --  manipulate record fields from RunData
 
 required :: FromYAML a => DocYAML -> Text -> (a -> StateR b) -> ExceptStateR b
-required doc recordfields f = lift $ case fieldPath recordfields of 
-        Left err -> return $ Left $ quote recordfields <> " is not a valid record path; " <> err
-        Right fs -> do
-            lift $ f undefined
-            -- find lens; if not Left "application has no such setting: "
-            -- map fpath into document, then read node: print parse errors and throw error if problems
+required doc recordfields f = 
+    undefined ()
+    --lift $ case fieldPath recordfields of 
+    
+        --Left err -> return $ Left $ quote recordfields <> " is not a valid record path; " <> err
+        --Right fs -> do
+        --    lift $ f undefined
+        --    -- find lens; if not Left "application has no such setting: "
+        --    -- map fpath into document, then read node: print parse errors and throw error if problems
 
 
 instance LookupLensFrom RunData where
-    lookupLensFrom s = fromRight NoLens $ lookup s $ fromList [
-          , ("config-documentformat", makeLensFrom runConfigDocumentFormatL)
+    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
+            ("config-documentformat", makeLensFrom runConfigDocumentFormatL)
           , ("testA", makeLensFrom runTestAL)
           , ("testB", makeLensFrom runTestBL)
         ]
 
 instance LookupLensFrom TestB where
-    lookupLensFrom s = fromRight NoLens $ lookup s $ fromList [
+    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
             ("char0", makeLensFrom testbChar0L)
           , ("char1", makeLensFrom testbChar1L)
           , ("char2", makeLensFrom testbChar2L)
         ]
 
 instance LookupLensFrom TestA where
-    lookupLensFrom s = fromRight NoLens $ lookup s $ fromList [
+    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
             ("id", makeLensFrom testaIdL)
           , ("name", makeLensFrom testaNameL)
           , ("testB", makeLensFrom testaTestBL)
         ]
 
+runConfigDocumentFormatL = runConfigDocumentFormat 
+runTestAL = runTestA
+runTestBL = runTestB
+testaTestBL = testaTestB
+testaIdL = testaId
+testaNameL = testaName
+testbChar0L = testbChar0
+testbChar1L = testbChar1
+testbChar2L = testbChar2

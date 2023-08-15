@@ -22,8 +22,8 @@ import MyPrelude
 
 import Options.Applicative
 
-import qualified Parser as Atto
-import qualified Parser.SubjectID as Atto
+import Parser qualified as Atto
+import Parser.SubjectID qualified as Atto
 
 
 import Cmd
@@ -80,7 +80,7 @@ getOptionsAndCmd run =
     customExecParser preferences $ info (parser <**> helper) $ mconcat [ fullDesc 
         , header   $ prettyHeader $ runMetaName run
         , progDesc $ runMetaSynopsis run
-        , footer   $ runMetaCopyright run ++ showVersion (runMetaVersion run) ++ runMetaVersionInfo run
+        , footer   $ runMetaCopyright run ++ show (runMetaVersion run) ++ runMetaVersionInfo run
         --, failureCode 1
       ]
     where

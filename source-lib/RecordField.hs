@@ -18,17 +18,19 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ViewPatterns #-}
+--{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeApplications #-}
 module RecordField
   (
       RecordField,
       RecordFields,
 
-      LookupLensFrom,
+      LensFrom (NoLens),
+      LookupLensFrom (..),
       makeLensFrom,
 
-      findLens,
+      --findLens,
+      oneLens,
 
   ) where
 
@@ -57,11 +59,14 @@ type RecordFields = [RecordField]
 
 -- | le
 data LensFrom a where
+    --LensTo :: (LookupLensFrom a, Typeable a, Typeable b) => TypeRep b -> (a -> b) -> LensFrom a
+    --NoLens :: (LookupLensFrom a, Typeable a) => LensFrom a
     LensTo :: (Typeable a, Typeable b) => TypeRep b -> (a -> b) -> LensFrom a
-    NoLens :: LensFrom a
+    NoLens :: (Typeable a) => LensFrom a
 
 
 --makeLensFrom :: Typeable a, b => MyLens a b -> LensFrom a
+--makeLensFrom :: forall a b . (LookupLensFrom a, Typeable a, Typeable b) => (a -> b) -> LensFrom a
 makeLensFrom :: forall a b . (Typeable a, Typeable b) => (a -> b) -> LensFrom a
 makeLensFrom lensAB =
     LensTo (typeRep :: TypeRep b) lensAB
@@ -81,6 +86,7 @@ compose (LensTo tb' lensAB) (LensTo tc lensBC)
 
 class Typeable a => LookupLensFrom a where
     lookupLensFrom :: RecordField -> LensFrom a
+    lookupLensFrom = const NoLens
 
 
 
@@ -89,12 +95,12 @@ class Typeable a => LookupLensFrom a where
 
 type ErrorString = Text
 
-
+{-
 findLensFrom :: forall a . (LookupLensFrom a, Typeable a) => RecordFields -> Either ErrorString (LensFrom a)
 findLensFrom ss = case ss of
     []      -> Left $ "Empty path of record fields" 
-    (s:[])  -> helper s
-    (s:ss)  -> case helper s of 
+    (s:[])  -> oneLens s
+    (s:ss)  -> case oneLens s of 
         Left  err         -> Left err
         Right lensfromA   -> fmap (compose lensfromA) $ findLensFrom ss
     where
@@ -102,15 +108,50 @@ findLensFrom ss = case ss of
       helper s = case lookupLensFrom s of
         NoLens  -> Left $ "Record field does not exist: " <> quote s
         lenstoB -> Right lenstoB
-
+-}
 
 --------------------------------------------------------------------------------
 --  findLens
 
+eqT :: TypeRep a -> TypeRep b -> Bool
+eqT = \ta tb -> case ta `eqTypeRep` tb of
+    Just HRefl  -> True
+    _           -> False
+{-
 -- | find a lens a -> b from a given record path
-findLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordFields -> Either ErrorString (a -> b)
-findLens ss =
-    case findLensFrom ss @a of
+findLens :: forall a b . (LookupLensFrom a, Typeable b) => RecordFields -> Either ErrorString (a -> b)
+findLens ss = case ss of
+    []      -> Left $ "Empty path of record fields" 
+    (s:[])  -> helper ta s
+    --(s:ss)  -> case helper s of 
+    --    Left  err         -> Left err
+    --    Right lensfromA   -> fmap (compose lensfromA) $ findLensFrom ss
+   
+    where
+      ta = typeRep :: TypeRep a
+      tb = typeRep :: TypeRep b
+
+      helper :: forall x . LookupLensFrom x => TypeRep x -> RecordField -> Either ErrorString (x -> b)
+      helper tx s = case lookupLensFrom @x s of
+          NoLens  -> Left $ "Record field does not exist: " <> quote s
+          LensTo tb' lensA
+            | Just HRefl <- tb' `eqTypeRep` tx -> Right lensA
+            | otherwise -> Left $ "Codomain type mismatch for record field path " <> --show ss <> 
+                                 ": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
+-}
+
+oneLens :: forall x b . (LookupLensFrom x, Typeable b) => TypeRep x -> RecordField -> Either ErrorString (x -> b)
+oneLens tx s = case lookupLensFrom @x s of
+    NoLens  -> Left $ "Record field does not exist: " <> quote s
+    LensTo tb' lensA
+      | Just HRefl <- tb' `eqTypeRep` tb -> Right lensA
+      | otherwise -> Left $ "Record field type mismatch: found " <> show tb' <> ", expected " <> show tb
+
+    where
+      --ta = typeRep :: TypeRep a
+      tb = typeRep :: TypeRep b
+
+{-
         Left err  -> Left err
         Right lensfromA -> case lensfromA of
             NoLens          -> Left "The record field path does not exist"
@@ -120,6 +161,6 @@ findLens ss =
               | otherwise -> Left $ "Codomain type mismatch for record field path " <> show ss <> 
                                    ": Expected codomain " <> show (typeRep :: TypeRep b) <> " of " <>
                                    show (typeRep :: TypeRep a)  <> " -> " <> show (typeRep :: TypeRep tb') <> ""
-
+-}
 --TypeRep a -> TypeRep b -> Bool
 
