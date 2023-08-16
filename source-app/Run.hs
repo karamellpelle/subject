@@ -41,8 +41,7 @@ import Paths_subject
 import RecordField
 import Parser.RecordField
 
-import Relude.Extra.Lens
-import qualified Data.Map.Strict as Map
+--import Relude.Extra.Lens
 
 
 -- | our Reader monad
@@ -271,26 +270,27 @@ required doc recordfields f =
 
 
 instance LookupLensFrom RunData where
-    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
-            ("config-documentformat", makeLensFrom runConfigDocumentFormatL)
-          , ("testA", makeLensFrom runTestAL)
-          , ("testB", makeLensFrom runTestBL)
+    lookupLensFrom = lensRecordFieldTable [
+            lensRecordField "config-documentformat" runConfigDocumentFormatL
+          , lensRecordField "testA" runTestAL
+          , lensRecordField "testB" runTestBL
         ]
 
 instance LookupLensFrom TestB where
-    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
-            ("char0", makeLensFrom testbChar0L)
-          , ("char1", makeLensFrom testbChar1L)
-          , ("char2", makeLensFrom testbChar2L)
+    lookupLensFrom = lensRecordFieldTable [
+            lensRecordField "char0" testbChar0L
+          , lensRecordField "char1" testbChar1L
+          , lensRecordField "char2" testbChar2L
         ]
 
 instance LookupLensFrom TestA where
-    lookupLensFrom s = fromMaybe NoLens $ Map.lookup s $ fromList [
-            ("id", makeLensFrom testaIdL)
-          , ("name", makeLensFrom testaNameL)
-          , ("testB", makeLensFrom testaTestBL)
+    lookupLensFrom = lensRecordFieldTable [
+            lensRecordField "id" testaIdL
+          , lensRecordField "name" testaNameL
+          , lensRecordField "testB" testaTestBL
         ]
 
+-- lenses
 runConfigDocumentFormatL = runConfigDocumentFormat 
 runTestAL = runTestA
 runTestBL = runTestB

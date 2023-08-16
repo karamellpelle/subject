@@ -47,6 +47,7 @@ default-extensions:
  - NoImplicitPrelude
  - OverloadedStrings
  - ImportQualifiedPost
+ - TypeApplications
 
 library:
   source-dirs: source-lib

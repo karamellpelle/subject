@@ -25,19 +25,28 @@ module RecordField
       RecordField,
       RecordFields,
 
-      LensFrom (NoLens),
+      --LensFrom,
       LookupLensFrom (..),
-      makeLensFrom,
+      lensRecordFieldTable,
+      lensRecordField,
 
       --findLens,
       oneLens,
 
+      -- debug
+      LensFrom (..),
+      showLensFrom,
+      showEitherLensFrom,
+      showEitherLens,
+      
   ) where
 
-import MyPrelude hiding (takeWhile)
---import Data.Typeable
+import MyPrelude 
+-- import Data.Typeable uses a different type 'TypeRep = Internal.SomeTypeRep', 
+-- i.e. a homeogenous type, so we can't use that (or the Internal module). but
+-- 'module Type.Reflection' contains the correct 'TypeRep a':
 import Type.Reflection
-
+import qualified Data.Map.Strict as Map
 
 --------------------------------------------------------------------------------
 --  RecordField
@@ -48,46 +57,77 @@ type RecordField = Text
 -- | a path with record fields
 type RecordFields = [RecordField]
 
---------------------------------------------------------------------------------
---  find lenses
-
---data MyLens a b =
---    MyLens (a -> b)
---    deriving (Typeable)
-
 -- (a -> b) is a temporary type for Lens
+type Lens' a b = (a -> b)
 
--- | le
+
+--------------------------------------------------------------------------------
+-- heterogenous lens container
+
+-- if the real Lens' type creates problem, wrap them in a type
+--data PackedLens a b =
+--    PackedLens Lens'
+--packLens :: Lens' -> PackedLens a b
+--packLens PackedLens
+
+-- | wrap a 'Lens' a b' into a heterogenous type from 'a'
 data LensFrom a where
-    --LensTo :: (LookupLensFrom a, Typeable a, Typeable b) => TypeRep b -> (a -> b) -> LensFrom a
-    --NoLens :: (LookupLensFrom a, Typeable a) => LensFrom a
+    --NoLens :: (LookupLensFrom a, LookupLensFrom a) => LensFrom a
     LensTo :: (Typeable a, Typeable b) => TypeRep b -> (a -> b) -> LensFrom a
     NoLens :: (Typeable a) => LensFrom a
 
 
---makeLensFrom :: Typeable a, b => MyLens a b -> LensFrom a
---makeLensFrom :: forall a b . (LookupLensFrom a, Typeable a, Typeable b) => (a -> b) -> LensFrom a
-makeLensFrom :: forall a b . (Typeable a, Typeable b) => (a -> b) -> LensFrom a
-makeLensFrom lensAB =
-    LensTo (typeRep :: TypeRep b) lensAB
+--------------------------------------------------------------------------------
+--  debug
+
+showLensFrom :: forall a . LensFrom a -> String
+showLensFrom (LensTo tb lensAB) = "LensFromTo: " ++ show (Fun (TypeRep @a) tb) <> " (real lens: " ++ (show $ typeOf lensAB) ++ ")"
+showLensFrom NoLens = "NoLens"
+
+--showLensFrom :: forall a . ItherLensFrom a -> String
+showEitherLensFrom e = case e of
+    Left  err   -> toString err
+    Right lf    -> showLensFrom lf
+
+showEitherLens e = case e of
+    Left  err   -> toString err
+    Right f    -> show (typeOf f)
+
+
+
+--------------------------------------------------------------------------------
+--  
 
 -- | Lens' a b -> Lens' b c -> Lens' a c
 --   see implementation of 'fromDyn' of Data.Dynamic
 compose :: forall a b . LensFrom a -> LensFrom b -> LensFrom a
 compose (LensTo tb' lensAB) (LensTo tc lensBC)
-    | Just HRefl <- tb' `eqTypeRep` (typeRep :: TypeRep b) = LensTo tc $ append lensAB lensBC    -- if codomain of 'a' is the domain of 'b', compose lenses
-    | otherwise                                            = NoLens
+    | Just HRefl <- tb' `eqTypeRep` tb = LensTo tc $ append lensAB lensBC    -- if codomain of 'a' is the domain of 'b', compose lenses
+    | otherwise                        = NoLens
     where
+      tb = TypeRep @b
       append lensAB lensBC = lensBC . lensAB
 
 
 --------------------------------------------------------------------------------
---  record field -> Lens table
+--  from a type 'a': map name to 'Lens' a x'
 
 class Typeable a => LookupLensFrom a where
     lookupLensFrom :: RecordField -> LensFrom a
     lookupLensFrom = const NoLens
 
+
+--------------------------------------------------------------------------------
+--  create a map easily with these two handy functions (this is also the only way for the user!)
+
+-- | lookup table
+lensRecordFieldTable :: forall a. Typeable a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
+lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
+
+-- | lookup table item
+lensRecordField :: forall a b. (Typeable a, Typeable b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
+lensRecordField name lensAB =
+    (name, LensTo (TypeRep @b) lensAB)
 
 
 --------------------------------------------------------------------------------
@@ -140,27 +180,15 @@ findLens ss = case ss of
                                  ": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
 -}
 
-oneLens :: forall x b . (LookupLensFrom x, Typeable b) => TypeRep x -> RecordField -> Either ErrorString (x -> b)
-oneLens tx s = case lookupLensFrom @x s of
+-- TODO: use 'eqT'
+oneLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordField -> Either ErrorString (Lens' a b)
+oneLens s = case lookupLensFrom @a s of
     NoLens  -> Left $ "Record field does not exist: " <> quote s
-    LensTo tb' lensA
-      | Just HRefl <- tb' `eqTypeRep` tb -> Right lensA
-      | otherwise -> Left $ "Record field type mismatch: found " <> show tb' <> ", expected " <> show tb
-
+    LensTo tb' lensAB
+      | Just HRefl <- tb' `eqTypeRep` tb -> Right lensAB
+      | otherwise -> Left $ "Record field type mismatch: found " <> quote s <> 
+                            " :: " <> show (Fun ta tb') <> ", expected " <> show (Fun ta tb)
     where
-      --ta = typeRep :: TypeRep a
-      tb = typeRep :: TypeRep b
-
-{-
-        Left err  -> Left err
-        Right lensfromA -> case lensfromA of
-            NoLens          -> Left "The record field path does not exist"
-            -- make sure we point to the correct type (codomain):
-            LensTo tb' lensA
-              | Just HRefl <- tb' `eqTypeRep` (typeRep :: TypeRep b) -> Right lensA
-              | otherwise -> Left $ "Codomain type mismatch for record field path " <> show ss <> 
-                                   ": Expected codomain " <> show (typeRep :: TypeRep b) <> " of " <>
-                                   show (typeRep :: TypeRep a)  <> " -> " <> show (typeRep :: TypeRep tb') <> ""
--}
---TypeRep a -> TypeRep b -> Bool
+      ta = typeRep @a
+      tb = typeRep @b
 
