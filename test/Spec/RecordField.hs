@@ -15,19 +15,26 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module RecordField
-  (
-      RecordField,
-      RecordFields,
+module Spec.RecordField where
 
-      LookupLensFrom (..),
-      lensRecordFieldTable,
-      lensRecordField,
-
-      oneLens, -- ^ TOOD: remove
-  ) where
-
-import MyPrelude 
-
+import MyPrelude
 import RecordField.Internal
+
+
+
+--------------------------------------------------------------------------------
+--  debug
+
+showLensFrom :: forall a . LensFrom a -> String
+showLensFrom (LensTo tb lensAB) = "LensFromTo: " ++ show (Fun (TypeRep @a) tb) <> " (real lens: " ++ (show $ typeOf lensAB) ++ ")"
+showLensFrom NoLens = "NoLens"
+
+--showLensFrom :: forall a . ItherLensFrom a -> String
+showEitherLensFrom e = case e of
+    Left  err   -> toString err
+    Right lf    -> showLensFrom lf
+
+showEitherLens e = case e of
+    Left  err   -> toString err
+    Right f    -> show (typeOf f)
 
