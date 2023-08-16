@@ -15,6 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module Run.Term
   (
     term,
@@ -73,12 +74,12 @@ eatSend cmd = do
 
 -- info
 eatInfo :: CmdDataInfo -> RunM ()
-eatInfo cmd = do
+eatInfo _cmd = do
     putTextLn "List info (not implemented)"
 
 -- gui
 eatGUI :: CmdDataGUI -> RunM ()
-eatGUI cmd = do
+eatGUI _cmd = do
     putTextLn $ "Terminal does not handle GUI commands." 
     putTextLn $ "TODO: print gui arguments anyway" 
     putTextLn $ "Hint: Run application with '--gui FRONTEND CMD' (or without CMD)"

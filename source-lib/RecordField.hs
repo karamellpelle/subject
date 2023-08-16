@@ -27,7 +27,6 @@ module RecordField
       oneLens, -- ^ TOOD: remove
   ) where
 
-import MyPrelude 
 
 import RecordField.Internal
 

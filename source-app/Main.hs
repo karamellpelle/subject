@@ -22,8 +22,8 @@ import MyPrelude
 
 import Options.Applicative
 
-import Parser qualified as Atto
-import Parser.SubjectID qualified as Atto
+--import Parser qualified as Atto
+--import Parser.SubjectID qualified as Atto
 
 
 import Cmd

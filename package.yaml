@@ -42,6 +42,7 @@ ghc-options:
 - -Wpartial-fields
 - -Wredundant-constraints
 - -Wprepositive-qualified-module
+- -Wno-name-shadowing
 
 default-extensions:
  - NoImplicitPrelude
@@ -49,23 +50,25 @@ default-extensions:
  - ImportQualifiedPost
  - TypeApplications
 
-library:
-  source-dirs: source-lib
-  when:
-  - condition: false
-    other-modules: Paths_subject # https://github.com/sol/hpack#handling-of-paths_-modules 
+# https://github.com/sol/hpack#library-fields
+internal-libraries:
+  subject-internal:
+      source-dirs: source-lib
+      when:
+      - condition: false
+        other-modules: Paths_subject # https://github.com/sol/hpack#handling-of-paths_-modules 
 
 executables:
   subject:
     main:                Main.hs
     source-dirs:         source-app
-    other-modules:       Paths_subject
+    #other-modules:       Paths_subject
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - subject
+    - subject-internal
     - optparse-applicative
     - directory
     - filepath
@@ -74,14 +77,14 @@ executables:
 tests:
   subject-test:
     main:                Spec.hs
-    source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    source-dirs:         test/subject-test
     dependencies:
     - subject
     - tasty
     - tasty-hunit
     - tasty-smallcheck
     - smallcheck
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N

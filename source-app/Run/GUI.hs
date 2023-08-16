@@ -28,8 +28,9 @@ import Run
 import Cmd
 
 
+-- | handle command in GUI
 gui :: Frontend -> Cmd -> RunM ()
-gui frontend cmd = do
+gui frontend _cmd = do
 
     case frontend of
         "GTK3"     -> putTextLn "Running GUI with GTK3 as frontend"

@@ -15,12 +15,14 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 module Spec.RecordField where
 
 import MyPrelude
-import RecordField.Internal
+import Test.Tasty
+import Test.Tasty.SmallCheck 
 
-
+import Test.SmallCheck.Series
 
 --------------------------------------------------------------------------------
 --  debug

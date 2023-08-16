@@ -19,6 +19,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 module RecordField.Internal where
 
 
@@ -30,7 +31,7 @@ import Type.Reflection
 -- i.e. a homeogenous type, so we can't use that (or the Internal module). but
 -- 'module Type.Reflection' contains the correct 'TypeRep a':
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 
 
@@ -93,13 +94,14 @@ lensRecordField name lensAB =
 --
 --   see implementation of 'fromDyn' of Data.Dynamic
 --
-compose :: forall a b . LensFrom a -> LensFrom b -> LensFrom a
+compose :: forall a b . (Typeable a, Typeable b) => LensFrom a -> LensFrom b -> LensFrom a
 compose (LensTo tb' lensAB) (LensTo tc lensBC)
     | Just HRefl <- tb' `eqTypeRep` tb = LensTo tc $ append lensAB lensBC    
     | otherwise                        = NoLens
     where
       tb = TypeRep @b
       append lensAB lensBC = lensBC . lensAB
+compose _ab _bc = NoLens @a
 
 --------------------------------------------------------------------------------
 --  find lens

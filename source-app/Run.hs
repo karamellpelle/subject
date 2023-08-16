@@ -89,7 +89,7 @@ getLocalFileName path = do
     
 --------------------------------------------------------------------------------
 --  TODO: REmove
-
+{-
 log :: MonadIO m => Text -> m ()
 log = putTextLn
 
@@ -98,6 +98,7 @@ logError str = putTextLn $ "ERROR: " <> str
 
 logWarn :: MonadIO m => Text -> m ()
 logWarn str = putTextLn $ "WARNING: " <> str
+-}
 
 --------------------------------------------------------------------------------
 --  global settings
@@ -133,6 +134,7 @@ instance Default RunData where
       , runMetaVersion          = makeVersion [0,0]
       , runMetaVersionInfo      = ""
       , runMetaSynopsis         = ""
+      , runMetaHomepage         = ""
       , runMetaCopyright        = ""
 
       , runConfigPath           = ""
@@ -208,7 +210,10 @@ getRunData = evaluatingStateT def $
         modify $ \run -> run { runMetaVersionInfo = $(gitBranch) ++ " @ " ++ $(gitHash) }
 
         -- application synopsis
-        modify $ \run -> run { runMetaSynopsis = $(gitBranch) ++ " @ " ++ $(gitHash) }
+        modify $ \run -> run { runMetaSynopsis = runMetaSynopsis run }
+
+        -- application homepage
+        modify $ \run -> run { runMetaHomepage = runMetaHomepage run }
 
         -- copyright
         modify $ \run -> run { runMetaCopyright = packageInfo_copyright }
@@ -257,6 +262,7 @@ applyConfigFile path = do
 --------------------------------------------------------------------------------
 --  manipulate record fields from RunData
 
+{-}
 required :: FromYAML a => DocYAML -> Text -> (a -> StateR b) -> ExceptStateR b
 required doc recordfields f = 
     undefined ()
@@ -267,7 +273,10 @@ required doc recordfields f =
         --    lift $ f undefined
         --    -- find lens; if not Left "application has no such setting: "
         --    -- map fpath into document, then read node: print parse errors and throw error if problems
+-}
 
+--------------------------------------------------------------------------------
+--  tables of record field -> Lens
 
 instance LookupLensFrom RunData where
     lookupLensFrom = lensRecordFieldTable [
