@@ -2,17 +2,12 @@ name:                subject
 version:             0.1.0.0
 github:              karamellpelle/subject
 license:             GPL-3
+license-file:        LICENSE
 author:              karamellpelle@hotmail.com
 maintainer:          karamellpelle@hotmail.com
 copyright:           karamellpelle@hotmail.com
-extra-source-files:
-- README.md
-- CHANGELOG.md
-data-dir:            data-dir
-data-files:
-- subject/**/*
 
-# Metadata used when publishing your package
+# FIXME: Metadata used when publishing your package
 # synopsis:            Short description of your package
 # category:            Web
 
@@ -20,6 +15,14 @@ data-files:
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
 description:         Please see the README on Github at <https://github.com/karamellpelle/subject#readme>
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+data-dir:            data-dir
+data-files:
+- subject/**/*
+
 
 dependencies:
 - base
@@ -30,6 +33,7 @@ dependencies:
 #- libssh2
 #- hashable
 #- random
+#mixin: <only use specified modules from package>
 
 ghc-options:
 - -Wall
@@ -50,19 +54,19 @@ default-extensions:
  - ImportQualifiedPost
  - TypeApplications
 
-# https://github.com/sol/hpack#library-fields
+# private libraries (https://github.com/sol/hpack#library-fields)
 internal-libraries:
   subject-internal:
       source-dirs: source-lib
+      # https://github.com/sol/hpack#handling-of-paths_-modules 
       when:
       - condition: false
-        other-modules: Paths_subject # https://github.com/sol/hpack#handling-of-paths_-modules 
+        other-modules: Paths_subject 
 
 executables:
   subject:
     main:                Main.hs
     source-dirs:         source-app
-    #other-modules:       Paths_subject
     ghc-options:
     - -threaded
     - -rtsopts
@@ -78,8 +82,9 @@ tests:
   subject-test:
     main:                Spec.hs
     source-dirs:         test/subject-test
+    # other-modules: <pull indidual files from project root>
     dependencies:
-    - subject
+    - subject-internal
     - tasty
     - tasty-hunit
     - tasty-smallcheck
