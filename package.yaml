@@ -53,16 +53,29 @@ default-extensions:
  - OverloadedStrings
  - ImportQualifiedPost
  - TypeApplications
+ - RankNTypes
+ - ScopedTypeVariables
+ - FlexibleInstances
+ - GeneralizedNewtypeDeriving
+ - StandaloneDeriving
 
 # private libraries (https://github.com/sol/hpack#library-fields)
-internal-libraries:
-  subject-internal:
-      source-dirs: source-lib
-      # https://github.com/sol/hpack#handling-of-paths_-modules 
-      when:
-      - condition: false
-        other-modules: Paths_subject 
+library:
+    source-dirs: source-lib
+    # https://github.com/sol/hpack#handling-of-paths_-modules 
+    when:
+    - condition: false
+      other-modules: Paths_subject 
 
+## private libraries (https://github.com/sol/hpack#library-fields)
+#internal-libraries:
+#  subject-internal:
+#      source-dirs: source-lib
+#      # https://github.com/sol/hpack#handling-of-paths_-modules 
+#      when:
+#      - condition: false
+#        other-modules: Paths_subject 
+#
 executables:
   subject:
     main:                Main.hs
@@ -72,7 +85,8 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - subject-internal
+    #- subject-internal
+    - subject
     - optparse-applicative
     - directory
     - filepath
@@ -84,7 +98,8 @@ tests:
     source-dirs:         test/subject-test
     # other-modules: <pull indidual files from project root>
     dependencies:
-    - subject-internal
+    #- subject-internal
+    - subject
     - tasty
     - tasty-hunit
     - tasty-smallcheck

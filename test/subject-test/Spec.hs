@@ -30,7 +30,7 @@ main =
 
 testExamples :: TestTree
 testExamples = testGroup "Examples" [ 
-    testProperty "Not zero? " notZero,
+      testProperty "Not zero? " notZero 
     ]
 
 notZero :: NonZero UInt -> NonZero UInt -> Bool

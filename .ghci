@@ -1,3 +1,6 @@
 :set -fno-ghci-sandbox
 :set -ferror-spans
 :set -fdiagnostics-color=always
+:set -Wno-missing-signatures
+:set -Wno-unused-top-binds
+:set -Wno-unused-matches

@@ -249,7 +249,7 @@ type DocYAML = Doc (Node Pos)
 --   will terminate program if necessary data couldn't be read
 applyConfigFile :: FilePath -> ExceptStateR ()
 applyConfigFile path = do
-    let yaml = (undefined :: DocYAML)
+    --let yaml = (undefined :: DocYAML)
     --required yaml "version" $ \lens -> modify $ over 
     --required yaml "testA > testB > char0" $ \v -> modify $ over 
     --optional yaml "testB > char0" $ (modify $ over (receiverL . fingerprintL))

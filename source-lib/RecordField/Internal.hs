@@ -147,12 +147,10 @@ findLens ss = case ss of
                                  ": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
 -}
 
--- TODO: use 'eqT'
 oneLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordField -> Either ErrorString (Lens' a b)
 oneLens s = case lookupLensFrom @a s of
     NoLens  -> Left $ "Record field does not exist: " <> quote s
     LensTo tb' lensAB
-    --  | eqT tb tb'  -> Right lensAB
       | Just HRefl <- tb' `eqTypeRep` tb -> Right lensAB
       | otherwise   -> Left $ "Record field type mismatch: found " <> quote s <> 
                             " :: " <> show (Fun ta tb') <> ", expected " <> show (Fun ta tb)

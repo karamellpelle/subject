@@ -55,7 +55,7 @@ parseTest' :: Show a => Parser a -> Text -> IO ()
 parseTest' p str =
     case feed (parse p str) "" of
         Done i r  -> putTextLn $ show r <> "    , rest of input: " <> show i
-        Partial f -> print "parseTest': partial result - strange"
-        fail      -> print fail
+        Partial f -> putTextLn "parseTest': partial result - strange"
+        fail      -> putTextLn $ show fail
 
 
