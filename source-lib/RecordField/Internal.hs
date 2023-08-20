@@ -72,6 +72,20 @@ class Typeable a => LookupLensFrom a where
     lookupLensFrom :: RecordField -> LensFrom a
     lookupLensFrom = const NoLens
 
+instance Typeable a => LookupLensFrom a
+-- TODO: make overlappable
+
+
+-- TODO: rename:
+--class Typeable a => LensTable a where
+--    lensTableName :: Text
+--    lensTableName = show (TypeRep @a)
+--    lensTableLookup :: RecordField -> LensFrom a
+--    lensTableLookup = const NoLens
+--
+--instance Typeable a => LensTable a
+-- lensTable lensRecordFieldTable =
+-- lensName = lensRecordField
 
 --  create a map easily with these two handy functions, this is also the only way 
 --  for the user:
@@ -149,7 +163,7 @@ findLens ss = case ss of
 
 oneLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordField -> Either ErrorString (Lens' a b)
 oneLens s = case lookupLensFrom @a s of
-    NoLens  -> Left $ "Record field does not exist: " <> quote s
+    NoLens  -> Left $ show ta <> " has no field " <> quote s -- TODO: use tableName
     LensTo tb' lensAB
       | Just HRefl <- tb' `eqTypeRep` tb -> Right lensAB
       | otherwise   -> Left $ "Record field type mismatch: found " <> quote s <> 

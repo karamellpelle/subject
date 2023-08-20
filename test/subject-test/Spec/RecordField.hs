@@ -35,6 +35,15 @@ import Text.Pretty.Simple (pPrint)
 import GHC.Show qualified as S
 
 
+doc0 :: Document
+doc0 = def { docYear = 2023, docPublisher = "KPelle Pub. Inc." }
+
+doc1 :: Document 
+doc1 = def { docYear = 1999, docAuthor = author0 { authorHomepage = Just "www.duckduckgo.com" }}
+
+author0 :: Author
+author0 = def { authorName = def { nameFirst = "Larry", nameLast = "Laffer", nameTitle = Just "virgin" } }
+
 data Document = Document {
     docVersion :: UInt
   , docAuthor :: Author
@@ -61,9 +70,8 @@ data Name = Name {
 nameFirstL = nameFirst; nameLastL = nameLast; nameTitleL = nameTitle
 deriving instance S.Show Name
 instance Default Name where def = Name { nameFirst = "Haskell",nameLast="Curry",nameTitle=Just "Leader" }
---instance Default Name 
 
-instance LookupLensFrom Document where
+instance {-# OVERLAPPING #-} LookupLensFrom Document where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "version" docVersionL
       , lensRecordField "author" docAuthorL
@@ -71,20 +79,24 @@ instance LookupLensFrom Document where
       , lensRecordField "publisher" docPublisherL
       ]
 
-instance LookupLensFrom Author where
+instance {-# OVERLAPPING #-} LookupLensFrom Author where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "name" authorNameL
       , lensRecordField "homepage" authorHomepageL
       ]
 
-instance LookupLensFrom Name where
+--instance LensTable where
+--    lensTableName = "Author"
+--    lensTableLookup = lensTable [ lensTableName "name" authorNameL ]
+
+instance {-# OVERLAPPING #-} LookupLensFrom Name where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "first" nameFirstL
       , lensRecordField "last" nameLastL
       , lensRecordField "title" nameTitleL
       ]
 
-instance LookupLensFrom UInt
+--instance LookupLensFrom UInt
 
 --------------------------------------------------------------------------------
 --  debug
@@ -117,3 +129,8 @@ whenOneLens name f =
         Left err -> pPrint err
         Right lensAB -> f lensAB
 
+applyLensPrint :: forall a b . (LookupLensFrom a, LookupLensFrom b, Show b) => a -> RecordField -> IO b
+applyLensPrint va name =
+    case oneLens @a @b name of
+        Left err  -> error $ err
+        Right lensAB -> let b = lensAB va in pPrint (lensAB va) >> return b
