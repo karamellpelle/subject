@@ -108,7 +108,7 @@ instance S.Show (LensFrom a)
 -- | showLensFrom
 showLensFrom :: forall a . LensFrom a -> String
 showLensFrom (LensTo tb lensAB) = "LensFrom :: " ++ show (Fun (TypeRep @a) tb) <> ",  actual Lens: " ++ (show $ typeOf lensAB) 
-showLensFrom (NoLens str) = "NoLens: " <> str
+showLensFrom (NoLens) = "NoLens " ++ show (TypeRep @a)
 
 
 --showLensFrom :: forall a . ItherLensFrom a -> String
@@ -128,3 +128,10 @@ applyLens :: (LookupLensFrom a, Typeable b) => RecordFields -> a -> (b -> IO ())
 applyLens ss a f = case lookupLens ss of
     Left err      -> print err
     Right lensAB  -> f $ lensAB a
+
+
+--------------------------------------------------------------------------------
+--  GHCI
+
+-- applyLens ["author", "name", "title"] doc0 (pPrint @IO @(Maybe String))
+

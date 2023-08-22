@@ -35,6 +35,11 @@ import Type.Reflection
 import Data.Map.Strict qualified as Map
 
 
+--------------------------------------------------------------------------------
+--  TODO
+--  * can the magical HasField be used in some way? 
+--    https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/hasfield.html
+
 
 --------------------------------------------------------------------------------
 --  RecordField
@@ -42,34 +47,29 @@ import Data.Map.Strict qualified as Map
 -- | a record field with valid name: (_|[a-z])(_|-|'|[a-z]|[A-Z]|[0-9]|)*
 type RecordField = Text
 
--- | a path with record fields
+-- | a path of record fields
 type RecordFields = [RecordField]
 
--- (a -> b) is a temporary type for Lens
-type Lens' a b = (a -> b)
 
-lensComp :: Lens' a b -> Lens' b c -> Lens' a c
-lensComp = flip (.)
 
 --------------------------------------------------------------------------------
 -- heterogenous lens container
 
--- if the real Lens' type creates problem, wrap them in a type
---data PackedLens a b =
---    PackedLens Lens'
---packLens :: Lens' -> PackedLens a b
---packLens PackedLens
+
+-- (a -> b) is a temporary type for Lens
+type Lens' a b = (a -> b)
+
 
 -- | wrap a 'Lens' a b' into a heterogenous type from 'a'
 data LensFrom a where
     LensTo :: (LookupLensFrom a, LookupLensFrom b) => TypeRep b -> (Lens' a b) -> LensFrom a
-    NoLens :: (LookupLensFrom a) => String -> LensFrom a -- FIXME: remove string 
+    NoLens :: (LookupLensFrom a) => LensFrom a -- FIXME: remove string 
 
 
 -- | from a type 'a': map name to 'Lens' a x' for arbitrary x
 class Typeable a => LookupLensFrom a where
     lookupLensFrom :: RecordField -> LensFrom a
-    lookupLensFrom = const (NoLens $ show (typeRep @a) <> " has no associated record lenses")
+    lookupLensFrom = const NoLens 
     lookupLensFromName :: String
     lookupLensFromName = show (typeRep @a)
 
@@ -78,7 +78,7 @@ class Typeable a => LookupLensFrom a where
 
 -- | lookup table
 lensRecordFieldTable :: forall a. LookupLensFrom a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
-lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a "Custom LookupRecordField") $ Map.lookup rf $ fromList rfls
+lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
 
 -- | lookup table item
 lensRecordField :: forall a b. (LookupLensFrom a, LookupLensFrom b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
@@ -110,11 +110,11 @@ lensRecordField name lensAB =
 compose :: forall a b . (LookupLensFrom a, LookupLensFrom b) => LensFrom a -> LensFrom b -> LensFrom a
 compose (LensTo tb' lensAB) (LensTo tc lensBC)
     | Just HRefl <- tb' `eqTypeRep` tb = LensTo tc $ append lensAB lensBC    
-    | otherwise                        = NoLens "compose fail: type mismatch b -> b'"
+    | otherwise                        = NoLens
     where
       tb = TypeRep @b
       append lensAB lensBC = lensBC . lensAB
-compose _ab _bc = NoLens @a "compose fail: one argument is NoLens" 
+compose _ab _bc = NoLens @a 
 
 
 --------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ lookupLens ss = helper ta ss
 
       helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (Lens' x b)
       helper tx (s:ss)  = case lookupLensFrom @x s of
-          NoLens _str             -> Left $ (fromString (lookupLensFromName @x)) <> " has no field " <> quote s <> "   NoLens debug: " <> fromString _str 
+          NoLens            -> Left $ (fromString (lookupLensFromName @x)) <> " has no field " <> quote s 
           LensTo ty' lensXY -> case helper ty' ss of
               Left  err           -> Left err
               Right lensYB        -> Right $ compose lensXY lensYB
@@ -149,7 +149,7 @@ findLensFrom ss = helper (typeRep @a) ss
     where
       helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (LensFrom x)
       helper tx (s:ss)  = case lookupLensFrom @x s of
-          NoLens str  -> Left $ show tx <> " has no field " <> quote s <> " (" <> fromString str <> ")" -- TODO: use tableName 
+          NoLens -> Left $ show tx <> " has no field " <> quote s 
           LensTo ty lensX -> case helper ty ss of
               Left err      -> Left err
               Right lensfromY  -> Right (compose (LensTo ty lensX) (lensfromY))
