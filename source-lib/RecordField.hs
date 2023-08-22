@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module RecordField
   (
       RecordField,
@@ -24,7 +26,6 @@ module RecordField
       lensRecordFieldTable,
       lensRecordField,
 
-      oneLens, -- ^ TOOD: remove
   ) where
 
 import MyPrelude

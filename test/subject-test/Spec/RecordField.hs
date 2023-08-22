@@ -16,6 +16,7 @@
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE DeriveAnyClass #-}
@@ -97,17 +98,10 @@ instance LookupLensFrom Name where
       , lensRecordField "title" nameTitleL
       ]
 
---instance LookupLensFrom UInt
 
 --------------------------------------------------------------------------------
 --  debug
 
---applyLens :: (LookupLensFrom a, LookupLensFrom b, Show b) => a -> RecordFields -> IO b
---applyLens app rs = 
---    case findLensFrom rs of
---        Left err -> error err
---        Right (LensTo tb lensAB) -> pPrint (lensAB app)
---
 instance S.Show (LensFrom a) 
   where show = showLensFrom
 
@@ -130,24 +124,7 @@ showEitherLens e = case e of
 instance {-# OVERLAPPING #-} (Typeable a, Typeable b) => S.Show (Either ErrorString (Lens' a b))
   where show = showEitherLens
 
-whenOneLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordField -> ((Lens' a b) -> IO ()) -> IO ()
-whenOneLens name f =
-    case oneLens @a @b name of
-        Left err -> pPrint err
-        Right lensAB -> f lensAB
-
---applyLensPrint :: forall a . LookupLensFrom a => a -> RecordFields -> (forall b . Show b => b -> IO ()) -> IO ()
---applyLensPrint va names printer =
---    case findLensFrom @a names of 
---        Left err  -> pPrintErrorString $ toString err
---        Right (NoLens str)  -> pPrintErrorString $ toString str
---        Right (LensTo tb lensAB) -> printer (lensAB va)
---
---pPrintErrorString = pPrintString . toString
-    --pPrintOpts NoCheckColorTty
-    --where
-    --  opts = defaultOutputOptionsNoColor {
-    --      
-    --  }
--- GHCI
---findLensFrom @Document ["author", "name", "title"] 
+applyLens :: (LookupLensFrom a, Typeable b) => RecordFields -> a -> (b -> IO ()) -> IO ()
+applyLens ss a f = case lookupLens ss of
+    Left err      -> print err
+    Right lensAB  -> f $ lensAB a
