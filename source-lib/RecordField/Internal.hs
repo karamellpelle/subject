@@ -47,6 +47,8 @@ type RecordFields = [RecordField]
 -- (a -> b) is a temporary type for Lens
 type Lens' a b = (a -> b)
 
+lensComp :: Lens' a b -> Lens' b c -> Lens' a c
+lensComp = flip (.)
 
 --------------------------------------------------------------------------------
 -- heterogenous lens container
@@ -59,9 +61,8 @@ type Lens' a b = (a -> b)
 
 -- | wrap a 'Lens' a b' into a heterogenous type from 'a'
 data LensFrom a where
-    --NoLens :: (LookupLensFrom a, LookupLensFrom a) => LensFrom a
-    LensTo :: (Typeable a, Typeable b) => TypeRep b -> (a -> b) -> LensFrom a
-    NoLens :: (Typeable a) => LensFrom a
+    LensTo :: (LookupLensFrom a, LookupLensFrom b) => TypeRep b -> (Lens' a b) -> LensFrom a
+    NoLens :: (LookupLensFrom a) => String -> LensFrom a
 
 
 
@@ -70,9 +71,8 @@ data LensFrom a where
 
 class Typeable a => LookupLensFrom a where
     lookupLensFrom :: RecordField -> LensFrom a
-    lookupLensFrom = const NoLens
+    lookupLensFrom = const (NoLens $ show (typeRep @a) <> " has no associated record lenses")
 
-instance Typeable a => LookupLensFrom a
 -- TODO: make overlappable
 
 
@@ -91,11 +91,11 @@ instance Typeable a => LookupLensFrom a
 --  for the user:
 
 -- | lookup table
-lensRecordFieldTable :: forall a. Typeable a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
-lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
+lensRecordFieldTable :: forall a. LookupLensFrom a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
+lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a "Custom LookupRecordField") $ Map.lookup rf $ fromList rfls
 
 -- | lookup table item
-lensRecordField :: forall a b. (Typeable a, Typeable b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
+lensRecordField :: forall a b. (LookupLensFrom a, LookupLensFrom b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
 lensRecordField name lensAB =
     (name, LensTo (TypeRep @b) lensAB)
 
@@ -108,19 +108,20 @@ lensRecordField name lensAB =
 --
 --   see implementation of 'fromDyn' of Data.Dynamic
 --
-compose :: forall a b . (Typeable a, Typeable b) => LensFrom a -> LensFrom b -> LensFrom a
+compose :: forall a b . (LookupLensFrom a, LookupLensFrom b) => LensFrom a -> LensFrom b -> LensFrom a
 compose (LensTo tb' lensAB) (LensTo tc lensBC)
     | Just HRefl <- tb' `eqTypeRep` tb = LensTo tc $ append lensAB lensBC    
-    | otherwise                        = NoLens
+    | otherwise                        = NoLens "compose fail: type mismatch b -> b'"
     where
       tb = TypeRep @b
       append lensAB lensBC = lensBC . lensAB
-compose _ab _bc = NoLens @a
+compose _ab _bc = NoLens @a "compose fail: one argument is NoLens" 
 
 --------------------------------------------------------------------------------
 --  find lens
 
 type ErrorString = Text
+
 
 
 {-
@@ -138,32 +139,66 @@ findLensFrom ss = case ss of
         lenstoB -> Right lenstoB
 -}
 
-{-
 -- | find a lens a -> b from a given record path
-findLens :: forall a b . (LookupLensFrom a, Typeable b) => RecordFields -> Either ErrorString (a -> b)
-findLens ss = case ss of
-    []      -> Left $ "Empty path of record fields" 
-    (s:[])  -> helper ta s
-    --(s:ss)  -> case helper s of 
-    --    Left  err         -> Left err
-    --    Right lensfromA   -> fmap (compose lensfromA) $ findLensFrom ss
-   
+--findLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordFields -> Either ErrorString (Lens' a b)
+--findLens ss = helper (typeRep @a) ss
+--    where
+--      helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (Lens' x b)
+--      helper tx (s:ss)  = case lookupLensFrom @x s of
+--          NoLens  -> Left $ show tx <> " has no field " <> quote s -- TODO: use tableName 
+--          LensTo ty lensX -> case helper ty ss of
+--              Left err -> Left err
+--              Right lensYB -> Right (lensComp lensX lensYB)
+--
+--      helper tx []      
+--            | Just HRefl <- tx `eqTypeRep` (typeRep @b) = Right (id @b)
+--            | otherwise = Left $ "Codomain mismatch: " <> show tx <> " != " <> show (typeRep @b)
+--                                 --"Codomain type mismatch for record field path " <> --show ss <> 
+--                                 --": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
+findLensFrom :: forall a b . (LookupLensFrom a) => RecordFields -> Either ErrorString (LensFrom a)
+findLensFrom ss = helper (typeRep @a) ss
     where
-      ta = typeRep :: TypeRep a
-      tb = typeRep :: TypeRep b
+      helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (LensFrom x)
+      helper tx (s:ss)  = case lookupLensFrom @x s of
+          NoLens str  -> Left $ show tx <> " has no field " <> quote s <> " (" <> fromString str <> ")" -- TODO: use tableName 
+          LensTo ty lensX -> case helper ty ss of
+              Left err      -> Left err
+              Right lensfromY  -> Right (compose (LensTo ty lensX) (lensfromY))
+      helper tx [] = Right $ LensTo tx (id @x)
+          
+--            | Just HRefl <- tx `eqTypeRep` (typeRep @b) = Right (id @b)
+--            | otherwise = Left $ "Codomain mismatch: " <> show tx <> " != " <> show (typeRep @b)
+--                                 --"Codomain type mismatch for record field path " <> --show ss <> 
+--                                 --": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
 
-      helper :: forall x . LookupLensFrom x => TypeRep x -> RecordField -> Either ErrorString (x -> b)
-      helper tx s = case lookupLensFrom @x s of
-          NoLens  -> Left $ "Record field does not exist: " <> quote s
-          LensTo tb' lensA
-            | Just HRefl <- tb' `eqTypeRep` tx -> Right lensA
-            | otherwise -> Left $ "Codomain type mismatch for record field path " <> --show ss <> 
-                                 ": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
--}
+    --where
+    --  ta = typeRep :: TypeRep a
+    --  tb = typeRep :: TypeRep b
+    --
+--findLens ss = case ss of
+    --[]      -> Left $ "Empty path of record fields" 
+    --(s:[])  -> helper ta s
+    ----(s:ss)  -> case helper s of 
+    ----    Left  err         -> Left err
+    ----    Right lensfromA   -> fmap (compose lensfromA) $ findLensFrom ss
+    --
+    --where
+    --  ta = typeRep :: TypeRep a
+    --  tb = typeRep :: TypeRep b
+    --
+    --  helper :: forall x y. (LookupLensFrom x, LookupLensFrom y) => TypeRep x -> RecordField -> Either ErrorString (Lens' x y)
+    --  helper tx s = case lookupLensFrom @x s of
+    --      NoLens  -> Left $ show (typeRep @x) <> " has no field " <> quote s -- TODO: use tableName 
+    --      LensTo tb' lensA
+    --        | Just HRefl <- tb' `eqTypeRep` tx -> Right lensA
+    --        | otherwise -> Left $ "Codomain type mismatch for record field path " <> --show ss <> 
+    --                             ": Expected codomain " <> show tb <> " of " <> show ta  <> " -> " <> show tb' <> ""
+    --
+
 
 oneLens :: forall a b . (LookupLensFrom a, LookupLensFrom b) => RecordField -> Either ErrorString (Lens' a b)
 oneLens s = case lookupLensFrom @a s of
-    NoLens  -> Left $ show ta <> " has no field " <> quote s -- TODO: use tableName
+    NoLens str -> Left $ show ta <> " has no field " <> quote s <> " (" <> fromString str <> ")" -- TODO: use tableName 
     LensTo tb' lensAB
       | Just HRefl <- tb' `eqTypeRep` tb -> Right lensAB
       | otherwise   -> Left $ "Record field type mismatch: found " <> quote s <> 

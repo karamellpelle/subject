@@ -29,11 +29,12 @@ module Spec.RecordField where
 import MyPrelude
 
 import RecordField.Internal
+import RecordField
+
 import Type.Reflection
-import Text.Pretty.Simple (pPrint)
+import Text.Pretty.Simple (pPrint, pPrintString)
 
 import GHC.Show qualified as S
-
 
 doc0 :: Document
 doc0 = def { docYear = 2023, docPublisher = "KPelle Pub. Inc." }
@@ -71,7 +72,7 @@ nameFirstL = nameFirst; nameLastL = nameLast; nameTitleL = nameTitle
 deriving instance S.Show Name
 instance Default Name where def = Name { nameFirst = "Haskell",nameLast="Curry",nameTitle=Just "Leader" }
 
-instance {-# OVERLAPPING #-} LookupLensFrom Document where
+instance LookupLensFrom Document where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "version" docVersionL
       , lensRecordField "author" docAuthorL
@@ -79,7 +80,7 @@ instance {-# OVERLAPPING #-} LookupLensFrom Document where
       , lensRecordField "publisher" docPublisherL
       ]
 
-instance {-# OVERLAPPING #-} LookupLensFrom Author where
+instance LookupLensFrom Author where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "name" authorNameL
       , lensRecordField "homepage" authorHomepageL
@@ -89,7 +90,7 @@ instance {-# OVERLAPPING #-} LookupLensFrom Author where
 --    lensTableName = "Author"
 --    lensTableLookup = lensTable [ lensTableName "name" authorNameL ]
 
-instance {-# OVERLAPPING #-} LookupLensFrom Name where
+instance LookupLensFrom Name where
     lookupLensFrom = lensRecordFieldTable [
         lensRecordField "first" nameFirstL
       , lensRecordField "last" nameLastL
@@ -101,24 +102,30 @@ instance {-# OVERLAPPING #-} LookupLensFrom Name where
 --------------------------------------------------------------------------------
 --  debug
 
-
+--applyLens :: (LookupLensFrom a, LookupLensFrom b, Show b) => a -> RecordFields -> IO b
+--applyLens app rs = 
+--    case findLensFrom rs of
+--        Left err -> error err
+--        Right (LensTo tb lensAB) -> pPrint (lensAB app)
+--
 instance S.Show (LensFrom a) 
   where show = showLensFrom
 
 -- | showLensFrom
 showLensFrom :: forall a . LensFrom a -> String
 showLensFrom (LensTo tb lensAB) = "LensFrom :: " ++ show (Fun (TypeRep @a) tb) <> ",  actual Lens: " ++ (show $ typeOf lensAB) 
-showLensFrom NoLens = "NoLens"
+showLensFrom (NoLens str) = "NoLens: " <> str
+
 
 --showLensFrom :: forall a . ItherLensFrom a -> String
-instance {-# OVERLAPPING #-} S.Show (Either ErrorString (LensFrom a))
-    where show (Left err) = toString err
-          show (Right lf) = show lf
+--instance {-# OVERLAPPING #-} S.Show (Either ErrorString (LensFrom a))
+--    where show (Left err) = toString err
+--          show (Right lf) = show lf
 
 showEitherLens :: forall a b . (Typeable a, Typeable b) => Either ErrorString (Lens' a b) -> String
 showEitherLens e = case e of
-    Left  err  -> "Left " <> toString err
-    Right f    -> "Right " <> show (typeOf f)
+    Left  err  -> "LEFT  : " <> toString err
+    Right f    -> "RIGHT : " <> show (typeOf f)
 
 instance {-# OVERLAPPING #-} (Typeable a, Typeable b) => S.Show (Either ErrorString (Lens' a b))
   where show = showEitherLens
@@ -129,8 +136,18 @@ whenOneLens name f =
         Left err -> pPrint err
         Right lensAB -> f lensAB
 
-applyLensPrint :: forall a b . (LookupLensFrom a, LookupLensFrom b, Show b) => a -> RecordField -> IO b
-applyLensPrint va name =
-    case oneLens @a @b name of
-        Left err  -> error $ err
-        Right lensAB -> let b = lensAB va in pPrint (lensAB va) >> return b
+--applyLensPrint :: forall a . LookupLensFrom a => a -> RecordFields -> (forall b . Show b => b -> IO ()) -> IO ()
+--applyLensPrint va names printer =
+--    case findLensFrom @a names of 
+--        Left err  -> pPrintErrorString $ toString err
+--        Right (NoLens str)  -> pPrintErrorString $ toString str
+--        Right (LensTo tb lensAB) -> printer (lensAB va)
+--
+--pPrintErrorString = pPrintString . toString
+    --pPrintOpts NoCheckColorTty
+    --where
+    --  opts = defaultOutputOptionsNoColor {
+    --      
+    --  }
+-- GHCI
+--findLensFrom @Document ["author", "name", "title"] 

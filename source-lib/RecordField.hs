@@ -27,6 +27,17 @@ module RecordField
       oneLens, -- ^ TOOD: remove
   ) where
 
-
+import MyPrelude
 import RecordField.Internal
+
+
+--------------------------------------------------------------------------------
+--  types with no record fields (empty implementation)
+
+instance LookupLensFrom UInt
+instance LookupLensFrom Int
+instance LookupLensFrom String
+instance LookupLensFrom Char
+instance Typeable a => LookupLensFrom (Maybe a)
+
 
