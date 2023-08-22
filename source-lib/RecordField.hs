@@ -22,9 +22,11 @@ module RecordField
       RecordField,
       RecordFields,
 
-      LookupLensFrom (..),
-      lensRecordFieldTable,
-      lensRecordField,
+      LensTable (..), 
+      lensTableFrom,
+      lensName,
+
+      lensLookup,
 
   ) where
 
@@ -35,10 +37,10 @@ import RecordField.Internal
 --------------------------------------------------------------------------------
 --  types with no record fields (empty implementation)
 
-instance LookupLensFrom UInt
-instance LookupLensFrom Int
-instance LookupLensFrom String
-instance LookupLensFrom Char
-instance Typeable a => LookupLensFrom (Maybe a)
+instance LensTable UInt
+instance LensTable Int
+instance LensTable String
+instance LensTable Char
+instance Typeable a => LensTable (Maybe a)
 
 

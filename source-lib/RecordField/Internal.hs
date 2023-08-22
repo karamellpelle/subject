@@ -35,6 +35,9 @@ import Type.Reflection
 import Data.Map.Strict qualified as Map
 
 
+
+
+
 --------------------------------------------------------------------------------
 --  TODO
 --  * can the magical HasField be used in some way? 
@@ -62,41 +65,18 @@ type Lens' a b = (a -> b)
 
 -- | wrap a 'Lens' a b' into a heterogenous type from 'a'
 data LensFrom a where
-    LensTo :: (LookupLensFrom a, LookupLensFrom b) => TypeRep b -> (Lens' a b) -> LensFrom a
-    NoLens :: (LookupLensFrom a) => LensFrom a -- FIXME: remove string 
+    LensTo :: (LensTable a, LensTable b) => TypeRep b -> (Lens' a b) -> LensFrom a
+    NoLens :: (LensTable a) => LensFrom a
 
 
 -- | from a type 'a': map name to 'Lens' a x' for arbitrary x
-class Typeable a => LookupLensFrom a where
-    lookupLensFrom :: RecordField -> LensFrom a
-    lookupLensFrom = const NoLens 
-    lookupLensFromName :: String
-    lookupLensFromName = show (typeRep @a)
+--   instance default implementation for a type with no record fields
+class Typeable a => LensTable a where
+    lensTableName :: String
+    lensTableName = show (typeRep @a)
+    lensTable :: RecordField -> LensFrom a
+    lensTable = const NoLens 
 
---  create a map easily with these two handy functions, this is also the only way 
---  for the user:
-
--- | lookup table
-lensRecordFieldTable :: forall a. LookupLensFrom a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
-lensRecordFieldTable rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
-
--- | lookup table item
-lensRecordField :: forall a b. (LookupLensFrom a, LookupLensFrom b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
-lensRecordField name lensAB =
-    (name, LensTo (TypeRep @b) lensAB)
-
-
-
--- TODO: rename:
---class Typeable a => LensTable a where
---    lensTableName :: Text
---    lensTableName = show (TypeRep @a)
---    lensTableLookup :: RecordField -> LensFrom a
---    lensTableLookup = const NoLens
---
---instance Typeable a => LensTable a
--- lensTable lensRecordFieldTable =
--- lensName = lensRecordField
 
 
 --------------------------------------------------------------------------------
@@ -107,7 +87,7 @@ lensRecordField name lensAB =
 --
 --   see implementation of 'fromDyn' of Data.Dynamic
 --
-compose :: forall a b . (LookupLensFrom a, LookupLensFrom b) => LensFrom a -> LensFrom b -> LensFrom a
+compose :: forall a b . (LensTable a, LensTable b) => LensFrom a -> LensFrom b -> LensFrom a
 compose (LensTo tb' lensAB) (LensTo tc lensBC)
     | Just HRefl <- tb' `eqTypeRep` tb = LensTo tc $ append lensAB lensBC    
     | otherwise                        = NoLens
@@ -116,22 +96,32 @@ compose (LensTo tb' lensAB) (LensTo tc lensBC)
       append lensAB lensBC = lensBC . lensAB
 compose _ab _bc = NoLens @a 
 
-
 --------------------------------------------------------------------------------
---  find lens
+--  user interface
 
 type ErrorString = Text
 
 
-lookupLens :: forall a b . (LookupLensFrom a, Typeable b) => RecordFields -> Either ErrorString (Lens' a b)
-lookupLens ss = helper ta ss
+-- | lookup table
+lensTableFrom :: forall a. LensTable a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
+lensTableFrom rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
+
+-- | lookup table item
+lensName :: forall a b. (LensTable a, LensTable b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
+lensName name lensAB =
+    (name, LensTo (TypeRep @b) lensAB)
+
+
+-- | find a lens from type 'a' to type 'b' from given path of record fields
+lensLookup :: forall a b . (LensTable a, Typeable b) => RecordFields -> Either ErrorString (Lens' a b)
+lensLookup ss = helper ta ss
     where
       ta = typeRep @a
       tb = typeRep @b
 
-      helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (Lens' x b)
-      helper tx (s:ss)  = case lookupLensFrom @x s of
-          NoLens            -> Left $ (fromString (lookupLensFromName @x)) <> " has no field " <> quote s 
+      helper :: forall x . (LensTable x) => TypeRep x -> RecordFields -> Either ErrorString (Lens' x b)
+      helper tx (s:ss)  = case lensTable @x s of
+          NoLens            -> Left $ (fromString (lensTableName @x)) <> " has no field " <> quote s 
           LensTo ty' lensXY -> case helper ty' ss of
               Left  err           -> Left err
               Right lensYB        -> Right $ compose lensXY lensYB
@@ -141,16 +131,3 @@ lookupLens ss = helper ta ss
 
       compose :: Lens' u0 u1 -> Lens' u1 u2 -> Lens' u0 u2
       compose = flip (.)
-
-
--- | TODO: remove
-findLensFrom :: forall a . (LookupLensFrom a) => RecordFields -> Either ErrorString (LensFrom a)
-findLensFrom ss = helper (typeRep @a) ss
-    where
-      helper :: forall x . (LookupLensFrom x) => TypeRep x -> RecordFields -> Either ErrorString (LensFrom x)
-      helper tx (s:ss)  = case lookupLensFrom @x s of
-          NoLens -> Left $ show tx <> " has no field " <> quote s 
-          LensTo ty lensX -> case helper ty ss of
-              Left err      -> Left err
-              Right lensfromY  -> Right (compose (LensTo ty lensX) (lensfromY))
-      helper tx [] = Right $ LensTo tx (id @x)

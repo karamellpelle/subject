@@ -1,9 +1,9 @@
 # TODO
+* 
 * implement ConfigFile read/write in YAML
 * write test suite of library
 * Remove Relude from MyPrelude and write explicit
-* use `quote`
-* recursive commands in general?
+* recursive commands in general, not only GUI?
 
 ## GUI
 * recursive commands for GUI: CmdGUI :: CmdDataGUI -> Cmd -> Cmd 

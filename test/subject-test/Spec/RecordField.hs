@@ -73,29 +73,30 @@ nameFirstL = nameFirst; nameLastL = nameLast; nameTitleL = nameTitle
 deriving instance S.Show Name
 instance Default Name where def = Name { nameFirst = "Haskell",nameLast="Curry",nameTitle=Just "Leader" }
 
-instance LookupLensFrom Document where
-    lookupLensFrom = lensRecordFieldTable [
-        lensRecordField "version" docVersionL
-      , lensRecordField "author" docAuthorL
-      , lensRecordField "year" docYearL
-      , lensRecordField "publisher" docPublisherL
+instance LensTable Document where
+    lensTable = lensTableFrom [
+        lensName "version" docVersionL
+      , lensName "author" docAuthorL
+      , lensName "year" docYearL
+      , lensName "publisher" docPublisherL
       ]
 
-instance LookupLensFrom Author where
-    lookupLensFrom = lensRecordFieldTable [
-        lensRecordField "name" authorNameL
-      , lensRecordField "homepage" authorHomepageL
+instance LensTable Author where
+    lensTable = lensTableFrom [
+        lensName "name" authorNameL
+      , lensName "homepage" authorHomepageL
       ]
 
 --instance LensTable where
 --    lensTableName = "Author"
 --    lensTableLookup = lensTable [ lensTableName "name" authorNameL ]
 
-instance LookupLensFrom Name where
-    lookupLensFrom = lensRecordFieldTable [
-        lensRecordField "first" nameFirstL
-      , lensRecordField "last" nameLastL
-      , lensRecordField "title" nameTitleL
+instance LensTable Name where
+    --lensTableName = "Name"
+    lensTable = lensTableFrom [
+        lensName "first" nameFirstL
+      , lensName "last" nameLastL
+      , lensName "title" nameTitleL
       ]
 
 
@@ -124,8 +125,8 @@ showEitherLens e = case e of
 instance {-# OVERLAPPING #-} (Typeable a, Typeable b) => S.Show (Either ErrorString (Lens' a b))
   where show = showEitherLens
 
-applyLens :: (LookupLensFrom a, Typeable b) => RecordFields -> a -> (b -> IO ()) -> IO ()
-applyLens ss a f = case lookupLens ss of
+applyLens :: (LensTable a, Typeable b) => RecordFields -> a -> (b -> IO ()) -> IO ()
+applyLens ss a f = case lensLookup ss of
     Left err      -> print err
     Right lensAB  -> f $ lensAB a
 
