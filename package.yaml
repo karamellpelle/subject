@@ -104,6 +104,7 @@ tests:
     - tasty-hunit
     - tasty-smallcheck
     - smallcheck
+    - pretty-simple
     ghc-options:
       - -threaded
       - -rtsopts

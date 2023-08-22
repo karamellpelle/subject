@@ -17,7 +17,7 @@
 --
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module RecordField
+module LensTable
   (
       RecordField,
       RecordFields,
@@ -31,7 +31,7 @@ module RecordField
   ) where
 
 import MyPrelude
-import RecordField.Internal
+import LensTable.Internal
 
 
 --------------------------------------------------------------------------------

@@ -21,7 +21,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
-module Spec.RecordField where
+module Spec.LensTable where
 
 --import Test.Tasty
 --import Test.Tasty.SmallCheck 
@@ -29,8 +29,8 @@ module Spec.RecordField where
 --
 import MyPrelude
 
-import RecordField.Internal
-import RecordField
+import LensTable.Internal
+import LensTable
 
 import Type.Reflection
 import Text.Pretty.Simple (pPrint, pPrintString)

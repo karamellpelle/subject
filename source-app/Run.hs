@@ -38,7 +38,7 @@ import System.FilePath
 import Development.GitRev
 import Paths_subject
 
-import RecordField
+import LensTable
 import Parser.RecordField
 
 --import Relude.Extra.Lens
@@ -278,25 +278,26 @@ required doc recordfields f =
 --------------------------------------------------------------------------------
 --  tables of record field -> Lens
 
-instance LookupLensFrom RunData where
-    lookupLensFrom = lensRecordFieldTable [
-            lensRecordField "config-documentformat" runConfigDocumentFormatL
-          , lensRecordField "testA" runTestAL
-          , lensRecordField "testB" runTestBL
+instance LensTable RunData where
+    lensTableName = "Application data"
+    lensTable = lensTableFrom [
+            lensName "config-documentformat" runConfigDocumentFormatL
+          , lensName "testA" runTestAL
+          , lensName "testB" runTestBL
         ]
 
-instance LookupLensFrom TestB where
-    lookupLensFrom = lensRecordFieldTable [
-            lensRecordField "char0" testbChar0L
-          , lensRecordField "char1" testbChar1L
-          , lensRecordField "char2" testbChar2L
+instance LensTable TestB where
+    lensTable = lensTableFrom [
+            lensName "char0" testbChar0L
+          , lensName "char1" testbChar1L
+          , lensName "char2" testbChar2L
         ]
 
-instance LookupLensFrom TestA where
-    lookupLensFrom = lensRecordFieldTable [
-            lensRecordField "id" testaIdL
-          , lensRecordField "name" testaNameL
-          , lensRecordField "testB" testaTestBL
+instance LensTable TestA where
+    lensTable = lensTableFrom [
+            lensName "id" testaIdL
+          , lensName "name" testaNameL
+          , lensName "testB" testaTestBL
         ]
 
 -- lenses

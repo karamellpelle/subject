@@ -28,7 +28,7 @@ module Parser.RecordField
 
 import MyPrelude hiding (takeWhile)
 import Data.Text qualified as T
-import RecordField
+import LensTable
 import Parser 
 
 

@@ -21,7 +21,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-module RecordField.Internal where
+module LensTable.Internal where
 
 
 import MyPrelude 
@@ -45,7 +45,7 @@ import Data.Map.Strict qualified as Map
 
 
 --------------------------------------------------------------------------------
---  RecordField
+--  LensTable
 
 -- | a record field with valid name: (_|[a-z])(_|-|'|[a-z]|[A-Z]|[0-9]|)*
 type RecordField = Text
