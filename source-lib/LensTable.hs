@@ -19,8 +19,8 @@
 
 module LensTable
   (
-      RecordField,
-      RecordFields,
+      Field,
+      FieldPath,
 
       LensTable (..), 
       lensTableFrom,
@@ -35,7 +35,7 @@ import LensTable.Internal
 
 
 --------------------------------------------------------------------------------
---  types with no record fields (empty implementation)
+--  types with no record fieldpath (empty implementation for scalar types)
 
 instance LensTable UInt
 instance LensTable Int
@@ -44,3 +44,6 @@ instance LensTable Char
 instance Typeable a => LensTable (Maybe a)
 
 
+--------------------------------------------------------------------------------
+--  TODO
+--  * use interface functions from LensTable.Parser?

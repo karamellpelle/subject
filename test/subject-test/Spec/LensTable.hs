@@ -125,7 +125,7 @@ showEitherLens e = case e of
 instance {-# OVERLAPPING #-} (Typeable a, Typeable b) => S.Show (Either ErrorString (Lens' a b))
   where show = showEitherLens
 
-applyLens :: (LensTable a, Typeable b) => RecordFields -> a -> (b -> IO ()) -> IO ()
+applyLens :: (LensTable a, Typeable b) => FieldPath -> a -> (b -> IO ()) -> IO ()
 applyLens ss a f = case lensLookup ss of
     Left err      -> print err
     Right lensAB  -> f $ lensAB a

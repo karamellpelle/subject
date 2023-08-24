@@ -39,7 +39,7 @@ import Development.GitRev
 import Paths_subject
 
 import LensTable
-import Parser.RecordField
+import LensTable.Parser
 
 --import Relude.Extra.Lens
 

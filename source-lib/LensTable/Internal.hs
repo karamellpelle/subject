@@ -27,15 +27,26 @@ module LensTable.Internal where
 import MyPrelude 
 
 import Type.Reflection
---import Data.Typeable 
--- ^ this module uses a different type 'TypeRep = Internal.SomeTypeRep', 
--- i.e. a homeogenous type, so we can't use that (or the Internal module). but
--- 'module Type.Reflection' contains the correct 'TypeRep a':
+-- ^ 'Type.Reflection' contains the homogenous 'TypeRep a' we need, 
+--    not the heterogenous in Data.Typeable
 
 import Data.Map.Strict qualified as Map
 
 
 
+--------------------------------------------------------------------------------
+--  Record fieldpath
+
+
+-- | a record field 
+type Field = Text
+--data Field = 
+--    FieldName { fieldName :: Text } 
+    -- | FieldList
+    -- | FieldListIx
+
+-- | a path of record fieldpath
+type FieldPath = [Field]
 
 
 --------------------------------------------------------------------------------
@@ -46,14 +57,6 @@ import Data.Map.Strict qualified as Map
 
 --------------------------------------------------------------------------------
 --  LensTable
-
--- | a record field with valid name: (_|[a-z])(_|-|'|[a-z]|[A-Z]|[0-9]|)*
-type RecordField = Text
-
--- | a path of record fields
-type RecordFields = [RecordField]
-
-
 
 --------------------------------------------------------------------------------
 -- heterogenous lens container
@@ -70,11 +73,11 @@ data LensFrom a where
 
 
 -- | from a type 'a': map name to 'Lens' a x' for arbitrary x
---   instance default implementation for a type with no record fields
+--   instance default implementation for a type with no record fieldpath
 class Typeable a => LensTable a where
     lensTableName :: String
     lensTableName = show (typeRep @a)
-    lensTable :: RecordField -> LensFrom a
+    lensTable :: Field -> LensFrom a
     lensTable = const NoLens 
 
 
@@ -99,27 +102,28 @@ compose _ab _bc = NoLens @a
 --------------------------------------------------------------------------------
 --  user interface
 
+-- | error messages
 type ErrorString = Text
 
 
 -- | lookup table
-lensTableFrom :: forall a. LensTable a => [(RecordField, LensFrom a)] -> (RecordField -> LensFrom a)
+lensTableFrom :: forall a. LensTable a => [(Field, LensFrom a)] -> (Field -> LensFrom a)
 lensTableFrom rfls = \rf -> fromMaybe (NoLens @a) $ Map.lookup rf $ fromList rfls
 
 -- | lookup table item
-lensName :: forall a b. (LensTable a, LensTable b) => RecordField -> Lens' a b -> (RecordField, LensFrom a)
+lensName :: forall a b. (LensTable a, LensTable b) => Field -> Lens' a b -> (Field, LensFrom a)
 lensName name lensAB =
     (name, LensTo (TypeRep @b) lensAB)
 
 
--- | find a lens from type 'a' to type 'b' from given path of record fields
-lensLookup :: forall a b . (LensTable a, Typeable b) => RecordFields -> Either ErrorString (Lens' a b)
+-- | find a lens from type 'a' to type 'b' from given path of record fieldpath
+lensLookup :: forall a b . (LensTable a, Typeable b) => FieldPath -> Either ErrorString (Lens' a b)
 lensLookup ss = helper ta ss
     where
       ta = typeRep @a
       tb = typeRep @b
 
-      helper :: forall x . (LensTable x) => TypeRep x -> RecordFields -> Either ErrorString (Lens' x b)
+      helper :: forall x . (LensTable x) => TypeRep x -> FieldPath -> Either ErrorString (Lens' x b)
       helper tx (s:ss)  = case lensTable @x s of
           NoLens            -> Left $ (fromString (lensTableName @x)) <> " has no field " <> quote s 
           LensTo ty' lensXY -> case helper ty' ss of
