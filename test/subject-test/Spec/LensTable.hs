@@ -31,6 +31,8 @@ import MyPrelude
 
 import LensTable.Internal
 import LensTable
+import LensTable.Parser
+import Parser
 
 import Type.Reflection
 import Text.Pretty.Simple (pPrint, pPrintString)
@@ -125,14 +127,24 @@ showEitherLens e = case e of
 instance {-# OVERLAPPING #-} (Typeable a, Typeable b) => S.Show (Either ErrorString (Lens' a b))
   where show = showEitherLens
 
-applyLens :: (LensTable a, Typeable b) => FieldPath -> a -> (b -> IO ()) -> IO ()
-applyLens ss a f = case lensLookup ss of
+applyFieldPath :: (LensTable a, Typeable b) => FieldPath -> a -> (b -> IO ()) -> IO ()
+applyFieldPath ss a f = case lensLookup ss of
     Left err      -> print err
     Right lensAB  -> f $ lensAB a
 
+applyParsed :: (LensTable a, Typeable b) => Style -> Text -> a -> (b -> IO()) -> IO ()
+applyParsed style str a f = case lensParse style str of
+    Left err      -> print err
+    Right lensAB  -> f $ lensAB a
+
+applyParsed' :: (LensTable a, Typeable b) => Text -> a -> (b -> IO()) -> IO ()
+applyParsed' = applyParsed def
+
+type EitherError a b = Either ErrorString (Lens' a b)
 
 --------------------------------------------------------------------------------
 --  GHCI
 
--- applyLens ["author", "name", "title"] doc0 (pPrint @IO @(Maybe String))
-
+-- applyFieldPath ["author", "name", "title"] doc0 (pPrint @IO @(Maybe String))
+-- lensParse style0 "author > name" :: Eith'rError Document Name
+-- applyParsed' "author > name > first" doc0 $ \str -> putStrLn str == "Haskell"

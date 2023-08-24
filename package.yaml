@@ -30,6 +30,8 @@ dependencies:
 - attoparsec
 - HsYAML
 - data-default
+- microlens
+- microlens-mtl
 #- libssh2
 #- hashable
 #- random
@@ -91,6 +93,7 @@ executables:
     - directory
     - filepath
     - gitrev
+    - microlens-platform
 
 tests:
   subject-test:

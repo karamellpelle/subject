@@ -17,15 +17,14 @@
 --
 module LensTable.Parser
   (
-      Field,
-      FieldPath,
-
       Style (..),
       style0, style1,
 
       parseFieldPath,
       parseFieldPathGet,
       parseFieldPathSet,
+
+      lensParse,
 
   ) where
 
@@ -34,6 +33,12 @@ import Data.Text qualified as T
 
 import LensTable.Internal
 import Parser 
+
+
+lensParse :: (LensTable a, Typeable b) => Style -> Text -> Either ErrorString (Lens' a b)
+lensParse style str = do
+    path <- eitherParse (parseFieldPath style) str
+    lensLookup path
 
 
 --------------------------------------------------------------------------------

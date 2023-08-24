@@ -20,6 +20,7 @@ module Parser
     module Data.Attoparsec.Text,
     module Data.Char,
 
+    eitherParse,
     parseTest',
 
     AttoParse (..)
