@@ -38,8 +38,7 @@ import System.FilePath
 import Development.GitRev
 import Paths_subject
 
-import LensTable
-import LensTable.Parser
+import Config.Lens
 
 --import Relude.Extra.Lens
 
@@ -278,7 +277,7 @@ required doc recordfields f =
 --------------------------------------------------------------------------------
 --  tables of record field -> Lens
 
-instance LensTable RunData where
+instance Table RunData where
     lensTableName = "Application data"
     lensTable = lensTableFrom [
             lensName "config-documentformat" runConfigDocumentFormatL
@@ -286,14 +285,14 @@ instance LensTable RunData where
           , lensName "testB" runTestBL
         ]
 
-instance LensTable TestB where
+instance Table TestB where
     lensTable = lensTableFrom [
             lensName "char0" testbChar0L
           , lensName "char1" testbChar1L
           , lensName "char2" testbChar2L
         ]
 
-instance LensTable TestA where
+instance Table TestA where
     lensTable = lensTableFrom [
             lensName "id" testaIdL
           , lensName "name" testaNameL

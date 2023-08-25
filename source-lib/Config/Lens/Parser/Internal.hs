@@ -15,58 +15,52 @@
 -- You should have received a copy of the GNU General Public License
 -- along with 'subject'.  If not, see <http://www.gnu.org/licenses/>.
 --
-module LensTable.Parser
-  (
-      Style (..),
-      style0, style1,
-
-      parseFieldPath,
-      parseFieldPathGet,
-      parseFieldPathSet,
-
-      lensParse,
-
-  ) where
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+module Config.Lens.Parser.Internal where
 
 import MyPrelude hiding (takeWhile) -- TODO: remove takeWhile  (why is it exposed?)
 import Data.Text qualified as T
 
-import LensTable.Internal
+import Config.Lens.Internal
 import Parser 
 
 
-lensParse :: (LensTable a, Typeable b) => Style -> Text -> Either ErrorString (Lens' a b)
-lensParse style str = do
-    path <- eitherParse (parseFieldPath style) str
-    lensLookup path
-
-
 --------------------------------------------------------------------------------
---  Style
+--  ParserFormat
 
-data Style =
-    Style {
-        styleSeparator :: Text
-      , styleAssigner :: Text
+data ParserFormat =
+    ParserFormat {
+        parserformatSeparator :: Text
+      , parserformatAssigner :: Text
     }
 
-instance Default Style where
-    def = style0
+instance Default ParserFormat where
+    def = parserformatDot
+
+
+-- | telephone.alphabet.rat = value
+parserformatDot :: ParserFormat
+parserformatDot = ParserFormat {
+        parserformatSeparator = "."
+      , parserformatAssigner = "="
+    }
 
 
 -- | telephone > alphabet > rat = value
-style0 :: Style
-style0 = Style {
-        styleSeparator = ">"
-      , styleAssigner = "="
+parserformatBracket :: ParserFormat
+parserformatBracket = ParserFormat {
+        parserformatSeparator = ">"
+      , parserformatAssigner = "="
     }
 
 
 -- | telephone->alphabet->rat := value
-style1 :: Style
-style1 = Style {
-        styleSeparator = "->"
-      , styleAssigner = ":="
+parserformatPointer :: ParserFormat
+parserformatPointer = ParserFormat {
+        parserformatSeparator = "->"
+      , parserformatAssigner = "="
     }
 
 
@@ -77,9 +71,9 @@ style1 = Style {
 -- | parse a path of record fieldpath (allowing rest).
 --   * space at beginning is allowed
 --   * space between separator is allowed
-parseFieldPath :: Style -> Parser FieldPath
-parseFieldPath style =
-    sepBy1 (skipSpace *> parseField) (skipSpace *> string (styleSeparator style)) <?> "Record fieldpath format"
+parseFieldPath :: ParserFormat -> Parser FieldPath
+parseFieldPath parserformat =
+    sepBy1 (skipSpace *> parseField) (skipSpace *> string (parserformatSeparator parserformat)) <?> "Record fieldpath format"
     where
       parseField = liftA2 T.cons (satisfy p0) (takeWhile p1) <?> "Record field format" 
       p0 = \c -> c == '_' || isAsciiLower c -- _ or a-z
@@ -91,9 +85,9 @@ parseFieldPath style =
 --      * space between separator is allowed
 --      * space at end of line is allowed
 --   FIXME: endOfInput and add comments (string com <|> endOfInput)
-parseFieldPathGet :: Style -> Parser FieldPath
-parseFieldPathGet style =
-    parseFieldPath style <* skipSpace <* endOfInput <?> "Record fieldpath format (read)"
+parseFieldPathGet :: ParserFormat -> Parser FieldPath
+parseFieldPathGet parserformat =
+    parseFieldPath parserformat <* skipSpace <* endOfInput <?> "Record fieldpath format (read)"
 
 
 -- | parse a path of record fieldpath (write format), example " person -> address -> city := FL-30432  # my address  "
@@ -101,9 +95,9 @@ parseFieldPathGet style =
 --      * space between separator and assigner is allowed
 --      * space at end of line is allowed
 --   FIXME: endOfInput and add comment/end symbol (string com <|> endOfInput)
-parseFieldPathSet :: Style -> Parser a -> Parser (FieldPath, a)
-parseFieldPathSet style parseA =
-    liftA2 (,) (parseFieldPath style <* skipSpace <* string (styleAssigner style))
+parseFieldPathSet :: ParserFormat -> Parser a -> Parser (FieldPath, a)
+parseFieldPathSet parserformat parseA =
+    liftA2 (,) (parseFieldPath parserformat <* skipSpace <* string (parserformatAssigner parserformat))
                (skipSpace *> parseA) <* skipSpace <* endOfInput <?> "Record fieldpath format (set)"
 
 

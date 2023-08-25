@@ -17,33 +17,27 @@
 --
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module LensTable
+module Config.Lens.Table
   (
       Field,
       FieldPath,
 
-      LensTable (..), 
+      Table (..), 
       lensTableFrom,
       lensName,
-
-      lensLookup,
 
   ) where
 
 import MyPrelude
-import LensTable.Internal
+import Config.Lens.Table.Internal
+import Config.Lens.Internal
 
 
 --------------------------------------------------------------------------------
---  types with no record fieldpath (empty implementation for scalar types)
+--  there are no tables for primitive types types (exect for maybe constructors?) 
 
-instance LensTable UInt
-instance LensTable Int
-instance LensTable String
-instance LensTable Char
-instance Typeable a => LensTable (Maybe a)
-
-
---------------------------------------------------------------------------------
---  TODO
---  * use interface functions from LensTable.Parser?
+instance Table UInt
+instance Table Int
+instance Table String
+instance Table Char
+instance Typeable a => Table (Maybe a)
