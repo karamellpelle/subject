@@ -20,17 +20,20 @@ module MyPrelude
     (
     module Relude,    
     module Data.Default,
+    module Control.Monad.Except,
 
     UInt,
     fI,
     succ',
     io,
     quote,
+
+    MonadError,
 ) where
 
 import Relude
 import Data.Default
-
+import Control.Monad.Except (MonadError, throwError, catchError)
 
 --------------------------------------------------------------------------------
 --  

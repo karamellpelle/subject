@@ -24,7 +24,10 @@ module Config.Lens.Monad
 
 import MyPrelude
 
+import Config.Lens.Internal
 import Config.Lens.Monad.Internal
 
---optional :: (MonadError ErrorString m , Config conf) => conf -> FieldPath -> m ()
+--optional :: (MonadStates, MonadError ErrorString m , Config conf) => conf -> FieldPath -> m 
 --optional :: 
+
+

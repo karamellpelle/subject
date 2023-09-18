@@ -65,12 +65,12 @@ eatID cmd = do
 -- pack
 eatPack :: CmdDataPack -> RunM ()
 eatPack cmd = do
-    putTextLn $ "Packing folder '" <> fromString (cmdpackPath cmd) <> "' to '" <> fromString (cmdpackRecipient cmd) <> "' with SubjectID=" <> fromString (cmdpackSubjectID cmd) 
+    putTextLn $ "Packing folder '" <> fromString (cmdpackPath cmd) <> "' to '" <> fromString (show  $ cmdpackRecipient cmd) <> "' with SubjectID=" <> fromString (cmdpackSubjectID cmd) 
 
 -- send
 eatSend :: CmdDataSend -> RunM ()
 eatSend cmd = do
-    putTextLn $ "sending folder " <> quote (toText $ cmdsendPath cmd) <> " to " <> quote (toText $ cmdsendRecipient cmd)
+    putTextLn $ "sending folder " <> quote (toText $ cmdsendPath cmd) <> " to " <> quote (show $ cmdsendRecipient cmd)
 
 -- info
 eatInfo :: CmdDataInfo -> RunM ()

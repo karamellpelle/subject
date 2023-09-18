@@ -17,11 +17,22 @@
 --
 module Data.Recipient
   (
-    Recipient,
+    Recipient (..),
     
   ) where
 
 import MyPrelude
 
--- FIXME
-type Recipient = String
+type Fingerprint = String
+
+-- FIXME: TMP
+data Recipient = Recipient {
+      recipientName :: String
+    , recipientFingerprint :: Fingerprint
+    , recipientPriority :: UInt
+ }
+
+deriving instance Show Recipient
+
+instance Default Recipient where
+    def = Recipient "<NoRecipient>" "<NoFingerprint>" 0 

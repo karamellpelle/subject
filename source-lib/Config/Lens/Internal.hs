@@ -20,9 +20,11 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 module Config.Lens.Internal where
 
-
-
 import MyPrelude 
+
+--import Lens.Micro
+--import Lens.Micro.Mtl
+
 
 --------------------------------------------------------------------------------
 --  types
@@ -47,5 +49,9 @@ type Lens' a b = (a -> b)
 
 
 --class Config conf where
---    get :: a -> FieldPath -> b
---    set :: a -> FieldPath -> b
+--    configGet :: conf -> FieldPath -> b
+--    configSet set :: conf -> FieldPath -> b -> conf
+--    configOpen :: (MonadError m ErrorString) => FilePath -> m ErrorString conf
+--    configSave :: (MonadError m ErrorString) => FilePath -> (a -> 
+--    withConfig :: (MonadError m ErrorString) => FilePath -> (conf -> m a) -> m a
+--    withConfig file f = configOpen >>= f `catchError` (\err -> print err) 

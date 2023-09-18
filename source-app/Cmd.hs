@@ -29,6 +29,7 @@ module Cmd
     Frontend,
     GetSet (..),
 
+    module Data.Recipient,
   ) where
 
 import MyPrelude

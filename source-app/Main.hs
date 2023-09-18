@@ -38,7 +38,7 @@ import Run.GUI
 main :: IO ()
 main = do
 
-    -- create initial 'RunData' for program execution
+    -- retrieve initial 'RunData' for program execution
     --    0. from default value
     --    1. from system config (file)
     --    2. from user config (file)
@@ -131,7 +131,7 @@ parseCmdSend =
           arg <- argument str $ metavar "FOLDER|PACKED_FILE" <> help "Packed file or folder"
           pure $ CmdDataSend {
               cmdsendPath = arg
-            , cmdsendRecipient = recipient
+            , cmdsendRecipient = def { recipientName = recipient } -- FIXME
           }
 
 
@@ -178,7 +178,7 @@ parseCmdPack =
           arg <- argument str $ metavar "FOLDER" <> help "Folder to pack"
 
           pure $ CmdDataPack {
-              cmdpackRecipient = recipient
+              cmdpackRecipient = def { recipientName = recipient }
             , cmdpackPath = arg
             , cmdpackSubjectID = sid
           }

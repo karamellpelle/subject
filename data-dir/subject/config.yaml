@@ -1,2 +1,12 @@
----
-version:  0.0
+version:  v0.0
+test-a:
+    id: 43
+    name: hello
+    test-b:
+        char0: '3'
+        char1: 'D'
+        char2: '5'
+test-b:
+    char0: 'y'
+    char1: '5'
+    char2: 'h'

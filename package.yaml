@@ -27,6 +27,7 @@ data-files:
 dependencies:
 - base
 - relude
+- mtl
 - attoparsec
 - HsYAML
 - data-default

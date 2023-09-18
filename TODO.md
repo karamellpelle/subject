@@ -1,5 +1,6 @@
 # TODO
 * implement ConfigFile read/write in YAML
+* use falsify instead of smallcheck
 * write test suite of library
 * Remove Relude from MyPrelude and write explicit
 

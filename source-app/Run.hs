@@ -248,31 +248,30 @@ type DocYAML = Doc (Node Pos)
 --   will terminate program if necessary data couldn't be read
 applyConfigFile :: FilePath -> ExceptStateR ()
 applyConfigFile path = do
-    --let yaml = (undefined :: DocYAML)
-    --required yaml "version" $ \lens -> modify $ over 
-    --required yaml "testA > testB > char0" $ \v -> modify $ over 
-    --optional yaml "testB > char0" $ (modify $ over (receiverL . fingerprintL))
-    
-    return ()
+    whenM (io $ doesFileExist path) $ do
+
+        doc <- readDocYAML path
+
+        putTextLn $ toText $ "apply file " ++ path
+        print doc
+        --required yaml "version" $ \lens -> modify $ over 
+        --required yaml "testA > testB > char0" $ \v -> modify $ over 
+        --optional yaml "testB > char0" $ (modify $ over (receiverL . fingerprintL))
+        
+
+
+readDocYAML :: FilePath -> ExceptStateR DocYAML
+readDocYAML path = 
+    readFileLBS path >>= \bs -> case decodeNode bs of
+        Left (pos, str) -> 
+            throwError $ toText $ path ++ ": " ++ prettyPosWithSource pos  bs " error" ++ str
+        Right []        -> 
+            throwError $ toText $ path ++ ": No YAML document found"
+        Right (d:ds)    -> 
+            return d
 
 
 
-
---------------------------------------------------------------------------------
---  manipulate record fields from RunData
-
-{-}
-required :: FromYAML a => DocYAML -> Text -> (a -> StateR b) -> ExceptStateR b
-required doc recordfields f = 
-    undefined ()
-    --lift $ case fieldPath recordfields of 
-    
-        --Left err -> return $ Left $ quote recordfields <> " is not a valid record path; " <> err
-        --Right fs -> do
-        --    lift $ f undefined
-        --    -- find lens; if not Left "application has no such setting: "
-        --    -- map fpath into document, then read node: print parse errors and throw error if problems
--}
 
 --------------------------------------------------------------------------------
 --  tables of record field -> Lens
