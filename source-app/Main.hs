@@ -80,7 +80,7 @@ getOptionsAndCmd run =
     customExecParser preferences $ info (parser <**> helper) $ mconcat [ fullDesc 
         , header   $ prettyHeader $ runMetaName run
         , progDesc $ runMetaSynopsis run
-        , footer   $ runMetaCopyright run ++ show (runMetaVersion run) ++ runMetaVersionInfo run
+        , footer   $ runMetaCopyright run ++ ". " ++ show (runMetaVersion run) ++ runMetaVersionInfo run
         --, failureCode 1
       ]
     where

@@ -21,16 +21,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Run
   (
-    RunData (..),
+    module Run.RunData,
     RunM,
-    RunType (..),
 
     getRunData,
   ) where
 
 import MyPrelude 
 
-import Data.Version
+import Run.RunData
+import Run.Lenses
 import Data.YAML as YAML
 import System.Directory
 import System.FilePath
@@ -98,86 +98,6 @@ logError str = putTextLn $ "ERROR: " <> str
 logWarn :: MonadIO m => Text -> m ()
 logWarn str = putTextLn $ "WARNING: " <> str
 -}
-
---------------------------------------------------------------------------------
---  global settings
-
--- | global data for application
-data RunData = 
-  RunData
-  {
-      -- meta information
-      runMetaName :: String                 -- ^ application name
-    , runMetaVersion :: Version             -- ^ Version of program
-    , runMetaVersionInfo :: String          -- ^ tags, like Git commit
-    , runMetaSynopsis :: String             -- ^ short application description
-    , runMetaCopyright :: String             -- ^ copyright
-    , runMetaHomepage :: String             -- ^ homepage of application
-
-    , runConfigPath :: FilePath         -- ^ user configuration file path
-    , runConfigDocumentFormat :: String -- ^ file format of configuration file
-
-      -- run settings
-    , runVerbose :: Bool          -- ^ be verbose?
-    , runType :: RunType          -- ^ type of UI for program
-
-    -- test record patsh
-    , runTestA :: TestA  -- ^ test record path
-    , runTestB :: TestB  -- ^ test record path
-  }
-
-
-instance Default RunData where
-    def                         = RunData {
-        runMetaName             = ""
-      , runMetaVersion          = makeVersion [0,0]
-      , runMetaVersionInfo      = ""
-      , runMetaSynopsis         = ""
-      , runMetaHomepage         = ""
-      , runMetaCopyright        = ""
-
-      , runConfigPath           = ""
-      , runConfigDocumentFormat = ""
-
-      , runVerbose              = False
-      , runType                 = RunTypeTerm
-
-      , runTestA                = def
-      , runTestB                = def
-    }
-
---------------------------------------------------------------------------------
---  
-
--- | how to run application (UI) aka frontend
---   FIXME: rename into RunFrontend?
-data RunType =
-    RunTypeTerm |
-    RunTypeGUI String
-
-
---------------------------------------------------------------------------------
---  Test fields
-
-data TestA =
-    TestA {
-        testaId :: UInt
-      , testaName :: String
-      , testaTestB :: TestB
-    }
-
-data TestB =
-    TestB {
-        testbChar0 :: Char
-      , testbChar1 :: Char
-      , testbChar2 :: Char
-    }
-instance Default TestA where
-    def = TestA { testaId = 0, testaName = "TestA", testaTestB = def }
-
-instance Default TestB where
-    def = TestB { testbChar0 = 'A', testbChar1 = 'B', testbChar2 = 'C'}
-
 
 --------------------------------------------------------------------------------
 --  create data for program execution
@@ -269,42 +189,3 @@ readDocYAML path =
             throwError $ toText $ path ++ ": No YAML document found"
         Right (d:ds)    -> 
             return d
-
-
-
-
---------------------------------------------------------------------------------
---  tables of record field -> Lens
-
-instance Table RunData where
-    lensTableName = "Application data"
-    lensTable = lensTableFrom [
-            lensName "config-documentformat" runConfigDocumentFormatL
-          , lensName "testA" runTestAL
-          , lensName "testB" runTestBL
-        ]
-
-instance Table TestB where
-    lensTable = lensTableFrom [
-            lensName "char0" testbChar0L
-          , lensName "char1" testbChar1L
-          , lensName "char2" testbChar2L
-        ]
-
-instance Table TestA where
-    lensTable = lensTableFrom [
-            lensName "id" testaIdL
-          , lensName "name" testaNameL
-          , lensName "testB" testaTestBL
-        ]
-
--- lenses
-runConfigDocumentFormatL = runConfigDocumentFormat 
-runTestAL = runTestA
-runTestBL = runTestB
-testaTestBL = testaTestB
-testaIdL = testaId
-testaNameL = testaName
-testbChar0L = testbChar0
-testbChar1L = testbChar1
-testbChar2L = testbChar2
